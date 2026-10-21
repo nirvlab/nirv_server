@@ -90,16 +90,16 @@ export default function WorldFootprintMap() {
               <div style={{ width: '1px', backgroundColor: 'var(--color-border)' }} />
               <div>
                 <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text-main)', lineHeight: 1.1 }}>
-                  <AnimatedStat value={footprintStats.conferencesCount} suffix="+" />
+                  <AnimatedStat value={footprintStats.conferencesCount} suffix={footprintStats.conferencesCount > 0 ? '+' : ''} />
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                  {lang === 'vi' ? 'Hội nghị & Diễn đàn' : 'Conferences'}
+                  {lang === 'vi' ? 'Hội nghị quốc tế' : 'Conferences'}
                 </div>
               </div>
               <div style={{ width: '1px', backgroundColor: 'var(--color-border)' }} />
               <div>
                 <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text-main)', lineHeight: 1.1 }}>
-                  <AnimatedStat value={footprintStats.papersPresented} suffix="+" />
+                  <AnimatedStat value={footprintStats.papersPresented} suffix={footprintStats.papersPresented > 0 ? '+' : ''} />
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
                   {lang === 'vi' ? 'Báo cáo / Bài báo' : 'Presentations'}
@@ -346,7 +346,7 @@ export default function WorldFootprintMap() {
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>
             {lang === 'vi' ? 'Quốc gia tiêu biểu đã báo cáo:' : 'Featured conference countries:'}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
             {filteredLocations.map((loc) => {
               const isSelected = activeLocation.id === loc.id;
               return (
@@ -380,6 +380,11 @@ export default function WorldFootprintMap() {
                 </button>
               );
             })}
+            {visitedLocations.length <= 1 && (
+              <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic', marginLeft: '6px' }}>
+                • {lang === 'vi' ? 'Dữ liệu các chuyến công tác và báo cáo hội nghị quốc tế sẽ được cập nhật liên tục qua CMS khi đoàn khởi hành.' : 'Upcoming international conferences will be continuously updated via CMS.'}
+              </span>
+            )}
           </div>
         </div>
       </div>

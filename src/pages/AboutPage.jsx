@@ -456,22 +456,22 @@ export default function AboutPage() {
                   <div style={{ padding: '36px 24px 20px 24px', display: 'flex', justifyContent: 'center' }}>
                     <div
                       style={{
-                        width: '120px',
-                        height: '120px',
+                        width: '135px',
+                        height: '135px',
                         borderRadius: '50%',
                         backgroundColor: '#FFFFFF',
                         border: '3px solid var(--color-primary)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 4px 16px rgba(238,0,51,0.18)',
+                        boxShadow: '0 6px 20px rgba(238,0,51,0.18)',
                         overflow: 'hidden'
                       }}
                     >
                       <img
                         src="/assets/Tran_Duy_Nhan_avt.svg"
                         alt={member.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       />
                     </div>
                   </div>

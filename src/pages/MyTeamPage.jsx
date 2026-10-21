@@ -44,45 +44,50 @@ export default function MyTeamPage() {
         }}
         className="team-profile-card"
       >
-        {/* Avatar Container: Authentic Photo or Clean Monogram Badge */}
+        {/* Avatar Container: Centered Circular Frame that auto-fits any member photo without cropping */}
         <div
           style={{
-            height: '240px',
-            backgroundColor: 'var(--color-bg-page)',
+            padding: isLeadership ? '36px 24px 20px 24px' : '28px 20px 16px 20px',
+            backgroundColor: '#FAFBFD',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
-            borderBottom: '1px solid var(--color-border-light)',
-            overflow: 'hidden'
+            borderBottom: '1px solid var(--color-border-light)'
           }}
         >
-          {hasValidPhoto ? (
-            <img
-              src={avatarSrc}
-              alt={member.name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              className="portrait-img"
-            />
-          ) : (
-            <div
-              style={{
-                width: '100px',
-                height: '100px',
-                borderRadius: '50%',
-                backgroundColor: '#FFFFFF',
-                border: '3px solid var(--color-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(238, 0, 51, 0.15)'
-              }}
-            >
-              <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '1px' }}>
+          <div
+            style={{
+              width: isLeadership ? '150px' : '130px',
+              height: isLeadership ? '150px' : '130px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '3px solid var(--color-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 6px 22px rgba(238, 0, 51, 0.18)',
+              overflow: 'hidden'
+            }}
+          >
+            {hasValidPhoto ? (
+              <img
+                src={avatarSrc}
+                alt={member.name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  objectPosition: 'center center'
+                }}
+                className="portrait-img"
+              />
+            ) : (
+              <span style={{ fontSize: isLeadership ? '2.4rem' : '2rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '1px' }}>
                 {initials}
               </span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Member Details */}
