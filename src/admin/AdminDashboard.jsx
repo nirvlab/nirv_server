@@ -121,6 +121,37 @@ export default function AdminDashboard({ user, onLogout }) {
       if (type === 'pub') endpoint = isEdit ? `/api/admin/publications/${item.id}` : '/api/admin/publications';
       if (type === 'team') endpoint = isEdit ? `/api/admin/team/${item.id}` : '/api/admin/team';
 
+      // Immediate optimistic update for zero perceptible UI latency
+      if (type === 'initiative') {
+        if (isEdit) {
+          setInitiatives(prev => prev.map(p => p.id === item.id ? { ...p, ...item } : p));
+        } else {
+          setInitiatives(prev => [{ ...item, id: Date.now() }, ...prev]);
+        }
+      } else if (type === 'news') {
+        if (isEdit) {
+          setNewsEvents(prev => prev.map(p => p.id === item.id ? { ...p, ...item } : p));
+        } else {
+          setNewsEvents(prev => [{ ...item, id: Date.now() }, ...prev]);
+        }
+      } else if (type === 'pub') {
+        if (isEdit) {
+          setPublications(prev => prev.map(p => p.id === item.id ? { ...p, ...item } : p));
+        } else {
+          setPublications(prev => [{ ...item, id: Date.now() }, ...prev]);
+        }
+      } else if (type === 'team') {
+        if (isEdit) {
+          setTeamMembers(prev => prev.map(p => p.id === item.id ? { ...p, ...item } : p));
+        } else {
+          setTeamMembers(prev => [{ ...item, id: Date.now() }, ...prev]);
+        }
+      }
+
+      setModalType(null);
+      setEditingItem(null);
+      notify('Đã cập nhật dữ liệu thành công!');
+
       const method = isEdit ? 'PUT' : 'POST';
       const res = await fetch(endpoint, {
         method,
@@ -129,15 +160,14 @@ export default function AdminDashboard({ user, onLogout }) {
       });
       const data = await res.json();
       if (data.success) {
-        notify(data.message || 'Lưu thành công!');
-        setModalType(null);
-        setEditingItem(null);
         loadData();
       } else {
         notify(data.error || 'Có lỗi xảy ra', 'error');
+        loadData();
       }
     } catch (err) {
-      notify('Lỗi máy chủ', 'error');
+      notify('Lỗi kết nối máy chủ', 'error');
+      loadData();
     }
   };
 
@@ -399,8 +429,10 @@ export default function AdminDashboard({ user, onLogout }) {
                   onClick={() => {
                     setEditingItem({
                       title_vi: '', title_en: '', slug: '', summary_vi: '', summary_en: '',
-                      content_vi: '', content_en: '', category_vi: 'Y tế Số', category_en: 'Digital Healthcare',
-                      beneficiaries_vi: '', beneficiaries_en: '', metric_value: '', metric_label_vi: '', metric_label_en: '',
+                      content_vi: '', content_en: '', category_vi: 'Dân tộc thiểu số', category_en: 'Ethnic Minorities',
+                      beneficiaries_vi: '', beneficiaries_en: '',
+                      verification_vi: '', verification_en: '',
+                      metric_value: '', metric_label_vi: '', metric_label_en: '',
                       cover_image: '', status: 'published', order_index: initiatives.length + 1
                     });
                     setModalType('initiative');
@@ -428,7 +460,15 @@ export default function AdminDashboard({ user, onLogout }) {
                     {initiatives.map((item) => (
                       <tr key={item.id} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
                         <td style={{ padding: '12px 16px' }}>
-                          <img src={item.cover_image} alt="" style={{ width: '48px', height: '36px', objectFit: 'cover', borderRadius: '4px' }} />
+                          <img
+                            src={item.cover_image}
+                            alt=""
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="36" viewBox="0 0 48 36"><rect width="48" height="36" fill="%23f0eeee"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="10" fill="%23888888">Ảnh</text></svg>';
+                            }}
+                            style={{ width: '48px', height: '36px', objectFit: 'cover', borderRadius: '4px' }}
+                          />
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           <div style={{ fontWeight: 700, color: 'var(--color-text-main)' }}>{item.title_vi}</div>
@@ -951,7 +991,15 @@ export default function AdminDashboard({ user, onLogout }) {
                   <div key={media.id} style={{ backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '6px', overflow: 'hidden' }}>
                     <div style={{ height: '140px', backgroundColor: '#F0EEEE', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                       {media.mimetype.startsWith('image') ? (
-                        <img src={media.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img
+                          src={media.url}
+                          alt=""
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="140" viewBox="0 0 200 140"><rect width="200" height="140" fill="%23f0eeee"/><text x="50%" y="50%" font-size="12" dominant-baseline="middle" text-anchor="middle" fill="%23888888">Ảnh tệp</text></svg>';
+                          }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
                       ) : (
                         <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{media.original_name}</span>
                       )}
@@ -998,64 +1046,134 @@ export default function AdminDashboard({ user, onLogout }) {
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Tên dự án (Tiếng Việt) *</label>
-                    <input type="text" required value={editingItem.title_vi} onChange={(e) => setEditingItem({ ...editingItem, title_vi: e.target.value })} className="form-input" />
+                    <input type="text" required value={editingItem.title_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, title_vi: e.target.value })} className="form-input" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Tên dự án (English) *</label>
-                    <input type="text" required value={editingItem.title_en} onChange={(e) => setEditingItem({ ...editingItem, title_en: e.target.value })} className="form-input" />
+                    <input type="text" required value={editingItem.title_en || ''} onChange={(e) => setEditingItem({ ...editingItem, title_en: e.target.value })} className="form-input" />
                   </div>
                 </div>
 
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Chuyên mục (VI)</label>
-                    <input type="text" value={editingItem.category_vi} onChange={(e) => setEditingItem({ ...editingItem, category_vi: e.target.value })} className="form-input" />
+                    <input type="text" value={editingItem.category_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, category_vi: e.target.value })} className="form-input" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Chuyên mục (EN)</label>
-                    <input type="text" value={editingItem.category_en} onChange={(e) => setEditingItem({ ...editingItem, category_en: e.target.value })} className="form-input" />
+                    <input type="text" value={editingItem.category_en || ''} onChange={(e) => setEditingItem({ ...editingItem, category_en: e.target.value })} className="form-input" />
                   </div>
                 </div>
 
                 <div className="grid-2">
                   <div className="form-group">
-                    <label className="form-label">Số liệu tác động (Ví dụ: 120.000+)</label>
-                    <input type="text" value={editingItem.metric_value} onChange={(e) => setEditingItem({ ...editingItem, metric_value: e.target.value })} className="form-input" />
+                    <label className="form-label">Đối tượng đồng hành / tham gia (VI) *</label>
+                    <input
+                      type="text"
+                      placeholder="Ví dụ: Đồng bào dân tộc thiểu số, học sinh, sinh viên..."
+                      value={editingItem.beneficiaries_vi || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, beneficiaries_vi: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Đối tượng đồng hành / tham gia (EN)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Ethnic minority communities, students..."
+                      value={editingItem.beneficiaries_en || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, beneficiaries_en: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Phương thức kiểm chứng / Đơn vị thẩm định (VI)</label>
+                    <input
+                      type="text"
+                      placeholder="Ví dụ: Thẩm định & bảo trợ tại Hội thi Tin học trẻ toàn quốc..."
+                      value={editingItem.verification_vi || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, verification_vi: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Phương thức kiểm chứng (EN)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Audited and endorsed by National Contest..."
+                      value={editingItem.verification_en || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, verification_en: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid-3">
+                  <div className="form-group">
+                    <label className="form-label">Số liệu tác động (Ví dụ: 5.000+)</label>
+                    <input type="text" value={editingItem.metric_value || ''} onChange={(e) => setEditingItem({ ...editingItem, metric_value: e.target.value })} className="form-input" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Mô tả chỉ số (VI)</label>
-                    <input type="text" value={editingItem.metric_label_vi} onChange={(e) => setEditingItem({ ...editingItem, metric_label_vi: e.target.value })} className="form-input" />
+                    <input type="text" placeholder="Cặp ngữ liệu số hóa" value={editingItem.metric_label_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, metric_label_vi: e.target.value })} className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Mô tả chỉ số (EN)</label>
+                    <input type="text" placeholder="Digitized corpus pairs" value={editingItem.metric_label_en || ''} onChange={(e) => setEditingItem({ ...editingItem, metric_label_en: e.target.value })} className="form-input" />
                   </div>
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Tóm tắt ngắn (VI)</label>
-                  <textarea rows={2} value={editingItem.summary_vi} onChange={(e) => setEditingItem({ ...editingItem, summary_vi: e.target.value })} className="form-textarea" />
+                  <textarea rows={2} value={editingItem.summary_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, summary_vi: e.target.value })} className="form-textarea" />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Tóm tắt ngắn (EN)</label>
-                  <textarea rows={2} value={editingItem.summary_en} onChange={(e) => setEditingItem({ ...editingItem, summary_en: e.target.value })} className="form-textarea" />
+                  <textarea rows={2} value={editingItem.summary_en || ''} onChange={(e) => setEditingItem({ ...editingItem, summary_en: e.target.value })} className="form-textarea" />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Nội dung chi tiết (VI)</label>
-                  <textarea rows={4} value={editingItem.content_vi} onChange={(e) => setEditingItem({ ...editingItem, content_vi: e.target.value })} className="form-textarea" />
+                  <textarea rows={4} value={editingItem.content_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, content_vi: e.target.value })} className="form-textarea" />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Nội dung chi tiết (EN)</label>
-                  <textarea rows={4} value={editingItem.content_en} onChange={(e) => setEditingItem({ ...editingItem, content_en: e.target.value })} className="form-textarea" />
+                  <textarea rows={4} value={editingItem.content_en || ''} onChange={(e) => setEditingItem({ ...editingItem, content_en: e.target.value })} className="form-textarea" />
                 </div>
 
                 <div className="grid-2">
                   <div className="form-group">
-                    <label className="form-label">URL Ảnh đại diện</label>
-                    <input type="text" value={editingItem.cover_image} onChange={(e) => setEditingItem({ ...editingItem, cover_image: e.target.value })} className="form-input" />
+                    <label className="form-label">URL Ảnh đại diện / bìa</label>
+                    <input
+                      type="text"
+                      placeholder="/uploads/... hoặc URL ảnh https://"
+                      value={editingItem.cover_image || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, cover_image: e.target.value })}
+                      className="form-input"
+                    />
+                    {editingItem.cover_image && (
+                      <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <img
+                          src={editingItem.cover_image}
+                          alt="Preview"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="40" viewBox="0 0 60 40"><rect width="60" height="40" fill="%23eee"/><text x="50%" y="50%" font-size="10" dominant-baseline="middle" text-anchor="middle" fill="%23999">Ảnh</text></svg>';
+                          }}
+                          style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                        />
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Xem trước ảnh bìa</span>
+                      </div>
+                    )}
                   </div>
                   <div className="form-group">
                     <label className="form-label">Trạng thái xuất bản</label>
-                    <select value={editingItem.status} onChange={(e) => setEditingItem({ ...editingItem, status: e.target.value })} className="form-select">
+                    <select value={editingItem.status || 'published'} onChange={(e) => setEditingItem({ ...editingItem, status: e.target.value })} className="form-select">
                       <option value="published">Đã xuất bản (Published)</option>
                       <option value="draft">Bản nháp (Draft)</option>
                       <option value="archived">Lưu trữ (Archived)</option>
@@ -1076,7 +1194,7 @@ export default function AdminDashboard({ user, onLogout }) {
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Loại bài đăng</label>
-                    <select value={editingItem.type} onChange={(e) => setEditingItem({ ...editingItem, type: e.target.value })} className="form-select">
+                    <select value={editingItem.type || 'news'} onChange={(e) => setEditingItem({ ...editingItem, type: e.target.value })} className="form-select">
                       <option value="news">Tin tức (News)</option>
                       <option value="event">Sự kiện (Event)</option>
                     </select>
@@ -1093,45 +1211,112 @@ export default function AdminDashboard({ user, onLogout }) {
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Tiêu đề (Tiếng Việt) *</label>
-                    <input type="text" required value={editingItem.title_vi} onChange={(e) => setEditingItem({ ...editingItem, title_vi: e.target.value })} className="form-input" />
+                    <input type="text" required value={editingItem.title_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, title_vi: e.target.value })} className="form-input" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Tiêu đề (English) *</label>
-                    <input type="text" required value={editingItem.title_en} onChange={(e) => setEditingItem({ ...editingItem, title_en: e.target.value })} className="form-input" />
+                    <input type="text" required value={editingItem.title_en || ''} onChange={(e) => setEditingItem({ ...editingItem, title_en: e.target.value })} className="form-input" />
                   </div>
                 </div>
 
-                {editingItem.type === 'event' && (
-                  <div className="grid-2">
-                    <div className="form-group">
-                      <label className="form-label">Thời gian diễn ra sự kiện</label>
-                      <input type="datetime-local" value={editingItem.event_date ? editingItem.event_date.slice(0, 16) : ''} onChange={(e) => setEditingItem({ ...editingItem, event_date: e.target.value })} className="form-input" />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Địa điểm sự kiện</label>
-                      <input type="text" value={editingItem.event_location_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, event_location_vi: e.target.value })} className="form-input" />
-                    </div>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Chuyên mục (VI)</label>
+                    <input type="text" placeholder="Ví dụ: Nghiên cứu, Hội thảo, Đổi mới..." value={editingItem.category_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, category_vi: e.target.value })} className="form-input" />
                   </div>
+                  <div className="form-group">
+                    <label className="form-label">Chuyên mục (EN)</label>
+                    <input type="text" placeholder="e.g. Research, Workshop, Innovation..." value={editingItem.category_en || ''} onChange={(e) => setEditingItem({ ...editingItem, category_en: e.target.value })} className="form-input" />
+                  </div>
+                </div>
+
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Tác giả / Ban phụ trách (VI)</label>
+                    <input type="text" placeholder="Ví dụ: Ban Khoa học NIRV" value={editingItem.author_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, author_vi: e.target.value })} className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Tác giả / Ban phụ trách (EN)</label>
+                    <input type="text" placeholder="e.g. NIRV Science Board" value={editingItem.author_en || ''} onChange={(e) => setEditingItem({ ...editingItem, author_en: e.target.value })} className="form-input" />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Thẻ chủ đề / Tags (phân cách bởi dấu phẩy)</label>
+                  <input type="text" placeholder="AI, NLP, Community, Youth" value={editingItem.tags || ''} onChange={(e) => setEditingItem({ ...editingItem, tags: e.target.value })} className="form-input" />
+                </div>
+
+                {editingItem.type === 'event' && (
+                  <>
+                    <div className="grid-3">
+                      <div className="form-group">
+                        <label className="form-label">Thời gian diễn ra sự kiện</label>
+                        <input type="datetime-local" value={editingItem.event_date ? editingItem.event_date.slice(0, 16) : ''} onChange={(e) => setEditingItem({ ...editingItem, event_date: e.target.value })} className="form-input" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Địa điểm sự kiện (VI)</label>
+                        <input type="text" placeholder="Ví dụ: TP. Hồ Chí Minh / Trực tuyến" value={editingItem.event_location_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, event_location_vi: e.target.value })} className="form-input" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Địa điểm sự kiện (EN)</label>
+                        <input type="text" placeholder="e.g. Ho Chi Minh City / Online" value={editingItem.event_location_en || ''} onChange={(e) => setEditingItem({ ...editingItem, event_location_en: e.target.value })} className="form-input" />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Đường dẫn đăng ký tham gia (URL)</label>
+                      <input type="text" placeholder="https://..." value={editingItem.event_registration_url || ''} onChange={(e) => setEditingItem({ ...editingItem, event_registration_url: e.target.value })} className="form-input" />
+                    </div>
+                  </>
                 )}
 
                 <div className="form-group">
                   <label className="form-label">Tóm tắt nội dung (VI)</label>
-                  <textarea rows={2} value={editingItem.summary_vi} onChange={(e) => setEditingItem({ ...editingItem, summary_vi: e.target.value })} className="form-textarea" />
+                  <textarea rows={2} value={editingItem.summary_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, summary_vi: e.target.value })} className="form-textarea" />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Tóm tắt nội dung (EN)</label>
+                  <textarea rows={2} value={editingItem.summary_en || ''} onChange={(e) => setEditingItem({ ...editingItem, summary_en: e.target.value })} className="form-textarea" />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Nội dung đầy đủ (VI)</label>
-                  <textarea rows={4} value={editingItem.content_vi} onChange={(e) => setEditingItem({ ...editingItem, content_vi: e.target.value })} className="form-textarea" />
+                  <textarea rows={4} value={editingItem.content_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, content_vi: e.target.value })} className="form-textarea" />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Nội dung đầy đủ (EN)</label>
+                  <textarea rows={4} value={editingItem.content_en || ''} onChange={(e) => setEditingItem({ ...editingItem, content_en: e.target.value })} className="form-textarea" />
                 </div>
 
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">URL Ảnh bìa</label>
-                    <input type="text" value={editingItem.cover_image} onChange={(e) => setEditingItem({ ...editingItem, cover_image: e.target.value })} className="form-input" />
+                    <input
+                      type="text"
+                      placeholder="/uploads/... hoặc URL ảnh https://"
+                      value={editingItem.cover_image || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, cover_image: e.target.value })}
+                      className="form-input"
+                    />
+                    {editingItem.cover_image && (
+                      <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <img
+                          src={editingItem.cover_image}
+                          alt="Preview"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="40" viewBox="0 0 60 40"><rect width="60" height="40" fill="%23eee"/><text x="50%" y="50%" font-size="10" dominant-baseline="middle" text-anchor="middle" fill="%23999">Ảnh</text></svg>';
+                          }}
+                          style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                        />
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Xem trước ảnh bài viết</span>
+                      </div>
+                    )}
                   </div>
                   <div className="form-group">
                     <label className="form-label">Trạng thái xuất bản</label>
-                    <select value={editingItem.status} onChange={(e) => setEditingItem({ ...editingItem, status: e.target.value })} className="form-select">
+                    <select value={editingItem.status || 'published'} onChange={(e) => setEditingItem({ ...editingItem, status: e.target.value })} className="form-select">
                       <option value="published">Đã xuất bản (Published)</option>
                       <option value="draft">Bản nháp (Draft)</option>
                     </select>

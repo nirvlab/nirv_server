@@ -62,7 +62,7 @@ const loginLimiter = rateLimit({
 app.use('/api', apiLimiter);
 app.use('/api/admin/login', loginLimiter);
 
-// Static uploads directory with nosniff and download headers
+// Persistent Uploads Directory and Database Fallback Handler
 const os = require('node:os');
 const uploadDir = process.env.VERCEL ? path.join(os.tmpdir(), 'uploads') : path.resolve(__dirname, '../uploads');
 try {
@@ -71,14 +71,46 @@ try {
   }
 } catch (e) {}
 
-app.use(
-  '/uploads',
-  express.static(uploadDir, {
-    setHeaders: (res) => {
+async function handleServeUpload(req, res) {
+  const filename = req.params.filename;
+  const filePath = path.join(uploadDir, filename);
+
+  // 1. If present on disk, serve directly
+  if (fs.existsSync(filePath)) {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.sendFile(filePath);
+  }
+
+  // 2. Fetch from Turso database persistence
+  try {
+    const { db } = require('./db');
+    const asset = await db.get('SELECT mimetype, data_base64 FROM media_assets WHERE filename = ?', [filename]);
+    if (asset && asset.data_base64) {
+      const buffer = Buffer.from(asset.data_base64, 'base64');
+      res.setHeader('Content-Type', asset.mimetype || 'image/jpeg');
       res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      try {
+        if (!fs.existsSync(filePath)) {
+          fs.writeFileSync(filePath, buffer);
+        }
+      } catch (e) {}
+      return res.send(buffer);
     }
-  })
-);
+  } catch (err) {
+    console.error('Error serving upload from db:', err.message);
+  }
+
+  // 3. Graceful SVG fallback for missing assets
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.status(200).send('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="600" height="400" fill="#f0eeee"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#999999">NIRV Media Asset</text></svg>');
+}
+
+app.get('/uploads/:filename', handleServeUpload);
+app.get('/api/uploads/:filename', handleServeUpload);
+
 
 // Static public assets
 const publicAssetsDir = path.resolve(__dirname, '../public/assets');

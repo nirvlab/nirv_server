@@ -6,6 +6,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { db } = require('../db');
 const { generateToken, requireAuth } = require('../auth');
+const { clearCache } = require('../cache');
 
 // Multer storage setup
 const os = require('node:os');
@@ -144,6 +145,7 @@ router.post('/initiatives', async (req, res) => {
     const {
       slug, title_vi, title_en, summary_vi, summary_en, content_vi, content_en,
       category_vi, category_en, beneficiaries_vi, beneficiaries_en,
+      verification_vi, verification_en,
       metric_value, metric_label_vi, metric_label_en, cover_image, gallery, status, order_index
     } = req.body;
 
@@ -157,18 +159,22 @@ router.post('/initiatives', async (req, res) => {
       INSERT INTO initiatives (
         slug, title_vi, title_en, summary_vi, summary_en, content_vi, content_en,
         category_vi, category_en, beneficiaries_vi, beneficiaries_en,
+        verification_vi, verification_en,
         metric_value, metric_label_vi, metric_label_en, cover_image, gallery, status, order_index
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
+        ?, ?,
         ?, ?, ?, ?, ?, ?, ?
       )
     `, [
       cleanSlug, title_vi, title_en, summary_vi, summary_en, content_vi, content_en,
-      category_vi, category_en, beneficiaries_vi, beneficiaries_en,
-      metric_value, metric_label_vi, metric_label_en, cover_image, gallery || '[]', status || 'published', order_index || 0
+      category_vi, category_en, beneficiaries_vi || '', beneficiaries_en || '',
+      verification_vi || '', verification_en || '',
+      metric_value || '', metric_label_vi || '', metric_label_en || '', cover_image || '', gallery || '[]', status || 'published', order_index || 0
     ]);
 
+    clearCache();
     await logAudit(req, 'CREATE_INITIATIVE', 'initiative', cleanSlug);
     res.json({ success: true, message: 'Dự án đóng góp xã hội đã được tạo thành công.' });
   } catch (err) {
@@ -182,6 +188,7 @@ router.put('/initiatives/:id', async (req, res) => {
     const {
       slug, title_vi, title_en, summary_vi, summary_en, content_vi, content_en,
       category_vi, category_en, beneficiaries_vi, beneficiaries_en,
+      verification_vi, verification_en,
       metric_value, metric_label_vi, metric_label_en, cover_image, gallery, status, order_index
     } = req.body;
 
@@ -189,15 +196,18 @@ router.put('/initiatives/:id', async (req, res) => {
       UPDATE initiatives SET
         slug = ?, title_vi = ?, title_en = ?, summary_vi = ?, summary_en = ?, content_vi = ?, content_en = ?,
         category_vi = ?, category_en = ?, beneficiaries_vi = ?, beneficiaries_en = ?,
+        verification_vi = ?, verification_en = ?,
         metric_value = ?, metric_label_vi = ?, metric_label_en = ?, cover_image = ?, gallery = ?,
         status = ?, order_index = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `, [
       slug, title_vi, title_en, summary_vi, summary_en, content_vi, content_en,
-      category_vi, category_en, beneficiaries_vi, beneficiaries_en,
-      metric_value, metric_label_vi, metric_label_en, cover_image, gallery, status, order_index, id
+      category_vi, category_en, beneficiaries_vi || '', beneficiaries_en || '',
+      verification_vi || '', verification_en || '',
+      metric_value || '', metric_label_vi || '', metric_label_en || '', cover_image || '', gallery || '[]', status, order_index, id
     ]);
 
+    clearCache();
     await logAudit(req, 'UPDATE_INITIATIVE', 'initiative', id);
     res.json({ success: true, message: 'Dự án đã được cập nhật thành công.' });
   } catch (err) {
@@ -208,6 +218,7 @@ router.put('/initiatives/:id', async (req, res) => {
 router.delete('/initiatives/:id', async (req, res) => {
   try {
     await db.run('DELETE FROM initiatives WHERE id = ?', [req.params.id]);
+    clearCache();
     await logAudit(req, 'DELETE_INITIATIVE', 'initiative', req.params.id);
     res.json({ success: true, message: 'Đã xóa dự án thành công.' });
   } catch (err) {
@@ -526,11 +537,25 @@ router.post('/media/upload', upload.single('file'), async (req, res) => {
     }
 
     const fileUrl = `/uploads/${req.file.filename}`;
-    await db.run(`
-      INSERT INTO media_assets (filename, original_name, mimetype, size, url)
-      VALUES (?, ?, ?, ?, ?)
-    `, [req.file.filename, req.file.originalname, req.file.mimetype, req.file.size, fileUrl]);
 
+    // Convert file to base64 for persistent storage in Turso DB
+    let base64Data = null;
+    try {
+      if (req.file.buffer) {
+        base64Data = req.file.buffer.toString('base64');
+      } else if (req.file.path && fs.existsSync(req.file.path)) {
+        base64Data = fs.readFileSync(req.file.path, 'base64');
+      }
+    } catch (e) {
+      console.error('Error reading upload buffer:', e.message);
+    }
+
+    await db.run(`
+      INSERT INTO media_assets (filename, original_name, mimetype, size, url, data_base64)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [req.file.filename, req.file.originalname, req.file.mimetype, req.file.size, fileUrl, base64Data]);
+
+    clearCache();
     await logAudit(req, 'UPLOAD_MEDIA', 'media', req.file.filename);
     res.json({
       success: true,

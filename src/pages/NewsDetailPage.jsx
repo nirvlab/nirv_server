@@ -87,6 +87,10 @@ export default function NewsDetailPage() {
             <img
               src={item.cover_image}
               alt={lang === 'vi' ? item.title_vi : item.title_en}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="%23f0eeee"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="20" fill="%23888888">NIRV News &amp; Events</text></svg>';
+              }}
               style={{ width: '100%', maxHeight: '520px', objectFit: 'cover' }}
             />
           </div>

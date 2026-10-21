@@ -62,6 +62,10 @@ export default function SocialContributionPage() {
                       <img
                         src={item.cover_image}
                         alt={lang === 'vi' ? item.title_vi : item.title_en}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="600" height="400" fill="%23f0eeee"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" fill="%23888888">NIRV Social Initiative</text></svg>';
+                        }}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s ease' }}
                         className="initiative-img"
                       />
@@ -111,7 +115,9 @@ export default function SocialContributionPage() {
                           {t('social.targetBeneficiaries')}:
                         </div>
                         <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
-                          {lang === 'vi' ? item.beneficiaries_vi : item.beneficiaries_en}
+                          {lang === 'vi'
+                            ? (item.beneficiaries_vi || 'Cộng đồng đồng bào dân tộc thiểu số và học sinh, sinh viên yêu mến văn hóa truyền thống')
+                            : (item.beneficiaries_en || 'Ethnic minority communities and cultural heritage youth')}
                         </div>
 
                         {item.metric_value && (
@@ -122,6 +128,13 @@ export default function SocialContributionPage() {
                             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
                               {lang === 'vi' ? item.metric_label_vi : item.metric_label_en}
                             </span>
+                          </div>
+                        )}
+
+                        {(item.verification_vi || item.verification_en) && (
+                          <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--color-border)', fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <CheckCircle2 size={14} color="var(--color-primary)" />
+                            <span>{lang === 'vi' ? item.verification_vi : item.verification_en}</span>
                           </div>
                         )}
                       </div>

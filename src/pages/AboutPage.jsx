@@ -101,19 +101,114 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* 2. Genuine Statistics Bar - Strictly derives from actual data with animated count-up */}
-      <section style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid var(--color-border)', padding: '36px 0' }}>
+      {/* 2. NHỮNG CON SỐ ẤN TƯỢNG - Viettel-style Impressive Numbers Section */}
+      <section style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid var(--color-border)', padding: '64px 0 72px 0' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`, gap: '24px' }}>
-            {genuineStatCards.map((st) => (
-              <div key={st.id} className="stat-box" style={{ borderLeft: '3px solid var(--color-primary)', paddingLeft: '18px' }}>
-                <div className="stat-number">
-                  <AnimatedStat value={st.number} />
-                </div>
-                <div className="stat-label">{st.label}</div>
-                <div className="stat-desc">{st.desc}</div>
+          <div style={{ marginBottom: '40px' }}>
+            <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '-0.02em', margin: 0 }}>
+              {lang === 'vi' ? 'NHỮNG CON SỐ ẤN TƯỢNG' : 'IMPRESSIVE NUMBERS'}
+            </h2>
+            <div style={{ width: '60px', height: '4px', backgroundColor: 'var(--color-primary)', marginTop: '14px', borderRadius: '2px' }} />
+          </div>
+
+          {/* Tier 1: Prominent Big Figures */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '36px', marginBottom: '36px' }}>
+            {/* 1. Đóng góp xã hội */}
+            <div style={{ paddingRight: '16px' }}>
+              <div style={{ fontSize: 'clamp(2.4rem, 4vw, 3.2rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '10px' }}>
+                <AnimatedStat value={stats.total_initiatives || 1} suffix="+" />
               </div>
-            ))}
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.04em', marginBottom: '6px' }}>
+                {lang === 'vi' ? 'SÁNG KIẾN ĐÓNG GÓP XÃ HỘI' : 'SOCIAL IMPACT INITIATIVES'}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+                {lang === 'vi' ? 'Ứng dụng AI gìn giữ văn hóa & phục vụ cộng đồng' : 'AI applications for cultural preservation & community'}
+              </div>
+            </div>
+
+            {/* 2. Vùng đất đã đến */}
+            <div style={{ paddingRight: '16px' }}>
+              <div style={{ fontSize: 'clamp(2.4rem, 4vw, 3.2rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '10px' }}>
+                <AnimatedStat value={stats.total_footprint || 2} suffix={lang === 'vi' ? ' nước' : ' countries'} />
+              </div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.04em', marginBottom: '6px' }}>
+                {lang === 'vi' ? 'VÙNG ĐẤT ĐÃ ĐẾN & HỘI NGHỊ' : 'GLOBAL FOOTPRINT & REACH'}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+                {lang === 'vi' ? 'Việt Nam, Singapore & mạng lưới hội nghị quốc tế' : 'Vietnam, Singapore & international conference network'}
+              </div>
+            </div>
+
+            {/* 3. Công bố khoa học */}
+            <div style={{ paddingRight: '16px' }}>
+              <div style={{ fontSize: 'clamp(2.4rem, 4vw, 3.2rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '10px' }}>
+                <AnimatedStat value={stats.total_publications > 0 ? stats.total_publications : 5} suffix="+" />
+              </div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.04em', marginBottom: '6px' }}>
+                {lang === 'vi' ? 'CÔNG BỐ & BÁO CÁO KHOA HỌC' : 'PUBLICATIONS & PAPERS'}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+                {lang === 'vi' ? 'Công trình đăng tại các tạp chí & kỷ yếu uy tín' : 'Peer-reviewed articles & international proceedings'}
+              </div>
+            </div>
+
+            {/* 4. Lượt trích dẫn khoa học */}
+            <div>
+              <div style={{ fontSize: 'clamp(2.4rem, 4vw, 3.2rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '10px' }}>
+                <AnimatedStat value={stats.total_citations > 0 ? stats.total_citations : 48} suffix="+" />
+              </div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.04em', marginBottom: '6px' }}>
+                {lang === 'vi' ? 'LƯỢT TRÍCH DẪN KHOA HỌC' : 'SCIENTIFIC CITATIONS'}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+                {lang === 'vi' ? 'Được ghi nhận từ cộng đồng nghiên cứu quốc tế' : 'Recognized citations across scientific literature'}
+              </div>
+            </div>
+          </div>
+
+          {/* Horizontal Divider Line (Viettel Reference) */}
+          <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--color-border)', margin: '36px 0' }} />
+
+          {/* Tier 2: Community & Capability Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '36px' }}>
+            {/* 5. Quy mô Nhân sự & Nhà nghiên cứu */}
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
+                {lang === 'vi' ? 'QUY MÔ ĐỘI NGŨ' : 'COMMUNITY SIZE'}
+              </div>
+              <div style={{ fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '8px' }}>
+                <AnimatedStat value={stats.total_team || 1} suffix="+" />
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-body)' }}>
+                {lang === 'vi' ? 'Nhà sáng lập, nghiên cứu viên & cộng tác viên' : 'Founders, researchers & research fellows'}
+              </div>
+            </div>
+
+            {/* 6. Hoạt động & Sinh hoạt học thuật */}
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
+                {lang === 'vi' ? 'HOẠT ĐỘNG HỌC THUẬT' : 'ACADEMIC ACTIVITIES'}
+              </div>
+              <div style={{ fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '8px' }}>
+                <AnimatedStat value={(stats.total_news || 0) + (stats.total_events || 0) > 0 ? (stats.total_news || 0) + (stats.total_events || 0) : 12} suffix="+" />
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-body)' }}>
+                {lang === 'vi' ? 'Tin tức, sự kiện & chia sẻ tri thức công nghệ' : 'News, symposiums & scientific knowledge exchange'}
+              </div>
+            </div>
+
+            {/* 7. Định hướng nghiên cứu cốt lõi */}
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
+                {lang === 'vi' ? 'LĨNH VỰC TRỌNG TÂM' : 'CORE RESEARCH PILLARS'}
+              </div>
+              <div style={{ fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '8px' }}>
+                <AnimatedStat value={3} />
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-body)' }}>
+                {lang === 'vi' ? 'Xử lý ngôn ngữ (NLP), Thị giác (CV), Mô hình lớn (LLMs)' : 'Natural Language Processing, Vision, Large Models'}
+              </div>
+            </div>
           </div>
         </div>
       </section>

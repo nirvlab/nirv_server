@@ -1,15 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../db');
+const { getCache, setCache } = require('../cache');
 
 // GET /api/public/settings
 router.get('/settings', async (req, res) => {
   try {
+    const cached = getCache('public_settings');
+    if (cached) return res.json({ success: true, data: cached });
+
     const rows = await db.all('SELECT key, value FROM site_settings');
     const settings = {};
     for (const r of rows) {
       settings[r.key] = r.value;
     }
+    setCache('public_settings', settings, 60000);
     res.json({ success: true, data: settings });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -19,36 +24,64 @@ router.get('/settings', async (req, res) => {
 // GET /api/public/overview (Institution-wide real counts & featured highlights)
 router.get('/overview', async (req, res) => {
   try {
-    // 1. Calculate live statistics from published records only
-    const pubCount = await db.get("SELECT count(*) as count, coalesce(sum(citation_count), 0) as citations FROM publications WHERE status = 'published'");
-    const initCount = await db.get("SELECT count(*) as count FROM initiatives WHERE status = 'published'");
-    const newsCount = await db.get("SELECT count(*) as count FROM news_events WHERE status = 'published' AND type = 'news'");
-    const eventCount = await db.get("SELECT count(*) as count FROM news_events WHERE status = 'published' AND type = 'event'");
-    const teamCount = await db.get("SELECT count(*) as count FROM team_members WHERE status = 'published'");
+    const cached = getCache('public_overview');
+    if (cached) return res.json({ success: true, data: cached });
 
-    // 2. Fetch featured items for landing page
-    const featuredInitiatives = await db.all("SELECT * FROM initiatives WHERE status = 'published' ORDER BY order_index ASC, id DESC LIMIT 3");
-    const featuredNews = await db.all("SELECT * FROM news_events WHERE status = 'published' ORDER BY is_featured DESC, published_at DESC LIMIT 3");
-    const featuredPubs = await db.all("SELECT * FROM publications WHERE status = 'published' ORDER BY is_featured DESC, year DESC, citation_count DESC LIMIT 4");
-    const leadership = await db.all("SELECT * FROM team_members WHERE status = 'published' AND group_category = 'leadership' ORDER BY order_index ASC LIMIT 4");
+    // Parallel fetch using Promise.all for ultra-low latency response
+    const [
+      pubCount,
+      initCount,
+      newsCount,
+      eventCount,
+      teamCount,
+      footprintRow,
+      featuredInitiatives,
+      featuredNews,
+      featuredPubs,
+      leadership
+    ] = await Promise.all([
+      db.get("SELECT count(*) as count, coalesce(sum(citation_count), 0) as citations FROM publications WHERE status = 'published'"),
+      db.get("SELECT count(*) as count FROM initiatives WHERE status = 'published'"),
+      db.get("SELECT count(*) as count FROM news_events WHERE status = 'published' AND type = 'news'"),
+      db.get("SELECT count(*) as count FROM news_events WHERE status = 'published' AND type = 'event'"),
+      db.get("SELECT count(*) as count FROM team_members WHERE status = 'published'"),
+      db.get("SELECT value FROM site_settings WHERE key = 'footprint_destinations'"),
+      db.all("SELECT * FROM initiatives WHERE status = 'published' ORDER BY order_index ASC, id DESC LIMIT 3"),
+      db.all("SELECT * FROM news_events WHERE status = 'published' ORDER BY is_featured DESC, published_at DESC LIMIT 3"),
+      db.all("SELECT * FROM publications WHERE status = 'published' ORDER BY is_featured DESC, year DESC, citation_count DESC LIMIT 4"),
+      db.all("SELECT * FROM team_members WHERE status = 'published' AND group_category = 'leadership' ORDER BY order_index ASC LIMIT 4")
+    ]);
 
-    res.json({
-      success: true,
-      data: {
-        stats: {
-          total_publications: pubCount ? pubCount.count : 0,
-          total_citations: pubCount ? pubCount.citations : 0,
-          total_initiatives: initCount ? initCount.count : 0,
-          total_news: newsCount ? newsCount.count : 0,
-          total_events: eventCount ? eventCount.count : 0,
-          total_team: teamCount ? teamCount.count : 0
-        },
-        featured_initiatives: featuredInitiatives,
-        featured_news: featuredNews,
-        featured_publications: featuredPubs,
-        leadership_team: leadership
-      }
-    });
+    // Count footprint destinations (Vietnam base + configured destinations)
+    let footprintCount = 1;
+    if (footprintRow && footprintRow.value) {
+      try {
+        const list = JSON.parse(footprintRow.value);
+        if (Array.isArray(list)) {
+          const uniqueCountries = new Set(['vn', ...list.map(d => (d.country_code || d.country_vi || '').toLowerCase())]);
+          footprintCount = uniqueCountries.size;
+        }
+      } catch (e) {}
+    }
+
+    const payload = {
+      stats: {
+        total_publications: pubCount ? pubCount.count : 0,
+        total_citations: pubCount ? pubCount.citations : 0,
+        total_initiatives: initCount ? initCount.count : 0,
+        total_news: newsCount ? newsCount.count : 0,
+        total_events: eventCount ? eventCount.count : 0,
+        total_team: teamCount ? teamCount.count : 0,
+        total_footprint: footprintCount
+      },
+      featured_initiatives: featuredInitiatives,
+      featured_news: featuredNews,
+      featured_publications: featuredPubs,
+      leadership_team: leadership
+    };
+
+    setCache('public_overview', payload, 60000);
+    res.json({ success: true, data: payload });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

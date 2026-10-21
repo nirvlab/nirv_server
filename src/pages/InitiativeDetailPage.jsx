@@ -72,6 +72,10 @@ export default function InitiativeDetailPage() {
                 <img
                   src={initiative.cover_image}
                   alt={lang === 'vi' ? initiative.title_vi : initiative.title_en}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="%23f0eeee"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="20" fill="%23888888">NIRV Social Initiative</text></svg>';
+                  }}
                   style={{ width: '100%', maxHeight: '500px', objectFit: 'cover' }}
                 />
               </div>
@@ -94,7 +98,15 @@ export default function InitiativeDetailPage() {
                   <div className="grid-2" style={{ gap: '20px' }}>
                     {gallery.map((imgUrl, i) => (
                       <div key={i} style={{ borderRadius: '6px', overflow: 'hidden', height: '240px' }}>
-                        <img src={imgUrl} alt="Field activity" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img
+                          src={imgUrl}
+                          alt="Field activity"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240" viewBox="0 0 400 240"><rect width="400" height="240" fill="%23f0eeee"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%23888888">Activity Photo</text></svg>';
+                          }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -126,7 +138,9 @@ export default function InitiativeDetailPage() {
                     {t('social.targetBeneficiaries')}
                   </div>
                   <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
-                    {lang === 'vi' ? initiative.beneficiaries_vi : initiative.beneficiaries_en}
+                    {lang === 'vi'
+                      ? (initiative.beneficiaries_vi || 'Cộng đồng đồng bào dân tộc thiểu số và học sinh, sinh viên yêu mến văn hóa truyền thống')
+                      : (initiative.beneficiaries_en || 'Ethnic minority communities and youth passionate about cultural preservation')}
                   </div>
                 </div>
 
@@ -135,8 +149,10 @@ export default function InitiativeDetailPage() {
                     <CheckCircle2 size={16} color="var(--color-primary)" />
                     {lang === 'vi' ? 'Phương thức Kiểm chứng' : 'Verification Model'}
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--color-text-body)' }}>
-                    {lang === 'vi' ? 'Báo cáo độc lập từ cơ quan y tế / quản lý địa phương.' : 'Independently audited by partner regional authorities.'}
+                  <div style={{ fontSize: '0.85rem', color: 'var(--color-text-body)', lineHeight: '1.6' }}>
+                    {lang === 'vi'
+                      ? (initiative.verification_vi || 'Được thẩm định & bảo trợ chuyên môn tại Hội thi Tin học trẻ toàn quốc lần thứ XXXI')
+                      : (initiative.verification_en || 'Independently audited and evaluated at the 31st National Young Informatics Contest')}
                   </div>
                 </div>
 

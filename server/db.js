@@ -59,6 +59,8 @@ async function initDatabase() {
         category_en TEXT,
         beneficiaries_vi TEXT,
         beneficiaries_en TEXT,
+        verification_vi TEXT,
+        verification_en TEXT,
         metric_value TEXT,
         metric_label_vi TEXT,
         metric_label_en TEXT,
@@ -153,6 +155,7 @@ async function initDatabase() {
         mimetype TEXT NOT NULL,
         size INTEGER NOT NULL,
         url TEXT NOT NULL,
+        data_base64 TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -176,6 +179,17 @@ async function initDatabase() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Auto-migration for existing tables
+    const tryAddCol = async (table, col, type) => {
+      try {
+        await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type};`);
+      } catch (e) {}
+    };
+    await tryAddCol('initiatives', 'verification_vi', 'TEXT');
+    await tryAddCol('initiatives', 'verification_en', 'TEXT');
+    await tryAddCol('media_assets', 'data_base64', 'TEXT');
+
     console.log('Turso cloud database connected and verified.');
   } catch (err) {
     console.error('Error initializing Turso schema:', err.message);
