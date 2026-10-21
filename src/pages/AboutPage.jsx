@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import AnimatedStat from '../components/AnimatedStat';
+import WorldFootprintMap from '../components/WorldFootprintMap';
 import { ArrowRight, BookOpen, Users, Compass, ExternalLink, Sparkles, Layers, Cpu } from 'lucide-react';
 
 export default function AboutPage() {
@@ -418,7 +419,10 @@ export default function AboutPage() {
         </section>
       )}
 
-      {/* 8. Founder & Team Preview */}
+      {/* 8. Vùng đất đã đến - Interactive World Footprint Map */}
+      <WorldFootprintMap />
+
+      {/* 9. Founder & Team Preview */}
       {leadership.length > 0 && (
         <section className="section" style={{ backgroundColor: '#FFFFFF', borderTop: '1px solid var(--color-border)' }}>
           <div className="container">
@@ -452,20 +456,23 @@ export default function AboutPage() {
                   <div style={{ padding: '36px 24px 20px 24px', display: 'flex', justifyContent: 'center' }}>
                     <div
                       style={{
-                        width: '110px',
-                        height: '110px',
+                        width: '120px',
+                        height: '120px',
                         borderRadius: '50%',
                         backgroundColor: '#FFFFFF',
                         border: '3px solid var(--color-primary)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 4px 14px rgba(238,0,51,0.15)'
+                        boxShadow: '0 4px 16px rgba(238,0,51,0.18)',
+                        overflow: 'hidden'
                       }}
                     >
-                      <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                        TDN
-                      </span>
+                      <img
+                        src="/assets/Tran_Duy_Nhan_avt.svg"
+                        alt={member.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
                     </div>
                   </div>
                   <div style={{ padding: '10px 24px 32px 24px' }}>

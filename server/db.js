@@ -231,7 +231,7 @@ function initDatabase() {
       research_interests_en: 'Natural Language Processing (NLP), Computer Vision (CV), Large Language Models (LLMs)',
       bio_vi: 'Khởi xướng cộng đồng nghiên cứu NIRV nhằm tạo dựng một không gian học thuật mở, độc lập và gắn kết cho các bạn sinh viên, người trẻ đam mê nghiên cứu Trí tuệ Nhân tạo tại Việt Nam.',
       bio_en: 'Initiated the NIRV research community to build an open, collaborative, and independent space for students and emerging researchers passionate about AI in Vietnam.',
-      avatar: '',
+      avatar: '/assets/Tran_Duy_Nhan_avt.svg',
       email: 'nirv.colab@gmail.com',
       google_scholar: '',
       orcid: '',
@@ -241,7 +241,7 @@ function initDatabase() {
       status: 'published'
     });
   } else {
-    // Ensure titles and roles are exactly verified
+    // Ensure titles, roles, and authentic avatar are exactly verified
     db.prepare(`
       UPDATE team_members SET
         title_vi = 'Nhà sáng lập cộng đồng nghiên cứu NIRV',
@@ -252,6 +252,7 @@ function initDatabase() {
         affiliation_en = 'NIRV Research Community (Ho Chi Minh City, Vietnam)',
         research_interests_vi = 'Xử lý ngôn ngữ tự nhiên (NLP), Thị giác máy tính (CV), Mô hình ngôn ngữ lớn (LLMs)',
         research_interests_en = 'Natural Language Processing (NLP), Computer Vision (CV), Large Language Models (LLMs)',
+        avatar = '/assets/Tran_Duy_Nhan_avt.svg',
         email = 'nirv.colab@gmail.com'
       WHERE name = 'Trần Duy Nhân'
     `).run();

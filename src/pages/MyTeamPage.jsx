@@ -26,7 +26,8 @@ export default function MyTeamPage() {
 
   const renderMemberCard = (member, isLeadership = false) => {
     const initials = getInitials(member.name);
-    const hasValidPhoto = member.avatar && !member.avatar.includes('unsplash.com') && !member.avatar.includes('placeholder');
+    const avatarSrc = member.avatar || (member.name === 'Trần Duy Nhân' ? '/assets/Tran_Duy_Nhan_avt.svg' : null);
+    const hasValidPhoto = avatarSrc && !avatarSrc.includes('unsplash.com') && !avatarSrc.includes('placeholder');
 
     return (
       <div
@@ -43,7 +44,7 @@ export default function MyTeamPage() {
         }}
         className="team-profile-card"
       >
-        {/* Avatar Container: Authentic Photo or Clean Monogram Badge (NO stock models mistaken for NIRV members) */}
+        {/* Avatar Container: Authentic Photo or Clean Monogram Badge */}
         <div
           style={{
             height: '240px',
@@ -52,12 +53,13 @@ export default function MyTeamPage() {
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
-            borderBottom: '1px solid var(--color-border-light)'
+            borderBottom: '1px solid var(--color-border-light)',
+            overflow: 'hidden'
           }}
         >
           {hasValidPhoto ? (
             <img
-              src={member.avatar}
+              src={avatarSrc}
               alt={member.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               className="portrait-img"
