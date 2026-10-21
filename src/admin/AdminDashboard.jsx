@@ -6,20 +6,17 @@ import {
   ExternalLink, Upload, AlertCircle, RefreshCw, MapPin, Globe
 } from 'lucide-react';
 import { CountryFlag, getCountryCode } from '../components/WorldFootprintMap';
+import { COUNTRY_GEO_MAP, detectCountryGeo } from '../data/countryCoordinates';
 
-const PRESET_DESTINATIONS = [
-  { country_code: 'us', country_vi: 'Hoa Kỳ', country_en: 'United States', flag: '🇺🇸', region: 'americas', x: 28, y: 18 },
-  { country_code: 'sg', country_vi: 'Singapore', country_en: 'Singapore', flag: '🇸🇬', region: 'asia', x: 96, y: 32 },
-  { country_code: 'jp', country_vi: 'Nhật Bản', country_en: 'Japan', flag: '🇯🇵', region: 'asia', x: 109, y: 20 },
-  { country_code: 'kr', country_vi: 'Hàn Quốc', country_en: 'South Korea', flag: '🇰🇷', region: 'asia', x: 106, y: 19 },
-  { country_code: 'fr', country_vi: 'Pháp', country_en: 'France', flag: '🇫🇷', region: 'europe', x: 64, y: 15 },
-  { country_code: 'de', country_vi: 'Đức', country_en: 'Germany', flag: '🇩🇪', region: 'europe', x: 67, y: 13 },
-  { country_code: 'gb', country_vi: 'Vương quốc Anh', country_en: 'United Kingdom', flag: '🇬🇧', region: 'europe', x: 62, y: 14 },
-  { country_code: 'ca', country_vi: 'Canada', country_en: 'Canada', flag: '🇨🇦', region: 'americas', x: 32, y: 14 },
-  { country_code: 'au', country_vi: 'Úc', country_en: 'Australia', flag: '🇦🇺', region: 'asia', x: 114, y: 46 },
-  { country_code: 'it', country_vi: 'Ý', country_en: 'Italy', flag: '🇮🇹', region: 'europe', x: 66, y: 18 },
-  { country_code: 'cn', country_vi: 'Trung Quốc', country_en: 'China', flag: '🇨🇳', region: 'asia', x: 101, y: 19 }
-];
+const PRESET_DESTINATIONS = Object.values(COUNTRY_GEO_MAP).map(item => ({
+  country_code: item.code,
+  country_vi: item.vi,
+  country_en: item.en,
+  flag: item.flag,
+  region: item.region,
+  x: item.x,
+  y: item.y
+}));
 
 export default function AdminDashboard({ user, onLogout }) {
   const navigate = useNavigate();
@@ -1366,12 +1363,32 @@ export default function AdminDashboard({ user, onLogout }) {
             {modalType === 'footprint' && (
               <form onSubmit={async (e) => {
                 e.preventDefault();
-                const updated = [...footprintList, { ...editingItem, id: 'dest-' + Date.now() }];
+                const geo = detectCountryGeo(editingItem);
+                const updated = [...footprintList, {
+                  ...editingItem,
+                  country_code: editingItem.country_code || geo.code,
+                  region: editingItem.region || geo.region,
+                  x: editingItem.x ?? geo.x,
+                  y: editingItem.y ?? geo.y,
+                  id: 'dest-' + Date.now()
+                }];
                 await handleSaveFootprint(updated);
                 setModalType(null);
               }}>
+                {/* Visual continent & coordinate safety confirmation */}
+                {(() => {
+                  const geo = detectCountryGeo(editingItem);
+                  const regionName = geo.region === 'asia' ? 'Châu Á (Asia & Pacific)' : geo.region === 'europe' ? 'Châu Âu (Europe)' : geo.region === 'americas' ? 'Châu Mỹ (Americas)' : 'Châu Phi (Africa)';
+                  return (
+                    <div style={{ backgroundColor: '#F0F5FF', border: '1px solid #ADC6FF', borderRadius: '6px', padding: '10px 14px', marginBottom: '14px', fontSize: '0.85rem', color: '#1D39C4', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <MapPin size={16} color="var(--color-primary)" />
+                      <span>Định vị lục địa chuẩn xác: <strong>{regionName}</strong> • Tọa độ bản đồ: <code>x: {geo.x}, y: {geo.y}</code></span>
+                    </div>
+                  );
+                })()}
+
                 <div className="form-group">
-                  <label className="form-label">Chọn nhanh Quốc gia phổ biến</label>
+                  <label className="form-label">Chọn nhanh Quốc gia phổ biến (35+ nước gợi ý)</label>
                   <select
                     className="form-select"
                     onChange={(e) => {

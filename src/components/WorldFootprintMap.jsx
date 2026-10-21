@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { visitedLocations as defaultLocations, footprintStats as defaultStats } from '../data/footprintData';
+import { COUNTRY_GEO_MAP, detectCountryGeo } from '../data/countryCoordinates';
 import worldMapPoints from '../data/worldMapPoints.json';
 import AnimatedStat from './AnimatedStat';
 import { Globe, MapPin, Calendar, Award, Users, ChevronRight, Sparkles, Filter, ExternalLink } from 'lucide-react';
@@ -109,15 +110,20 @@ export default function WorldFootprintMap() {
   // Active location being displayed in the detail card
   const activeLocation = hoveredLocation || selectedLocation || locations[0];
 
-  // Filter locations by region
+  // Filter locations by region with automatic continent resolution
   const filteredLocations = useMemo(() => {
     if (filterRegion === 'all') return locations;
-    return locations.filter(loc => loc.region === filterRegion);
+    return locations.filter(loc => {
+      const geo = detectCountryGeo(loc);
+      const r = loc.region || geo.region;
+      return r === filterRegion;
+    });
   }, [filterRegion, locations]);
 
   const regions = [
     { id: 'all', label_vi: 'Tất cả vùng đất', label_en: 'All Destinations' },
     { id: 'asia', label_vi: 'Đông Nam Á & Châu Á', label_en: 'SE Asia & Asia' },
+    { id: 'europe', label_vi: 'Châu Âu', label_en: 'Europe' },
     { id: 'americas', label_vi: 'Châu Mỹ', label_en: 'Americas' },
     { id: 'africa', label_vi: 'Châu Phi', label_en: 'Africa' },
   ];
@@ -291,7 +297,11 @@ export default function WorldFootprintMap() {
               {/* 2. Interactive Location Markers (Red Nodes matching reference design) */}
               {locations.map((loc) => {
                 const isSelected = activeLocation.id === loc.id;
-                const isMatchRegion = filterRegion === 'all' || loc.region === filterRegion;
+                const geo = detectCountryGeo(loc);
+                const posX = loc.x ?? geo.x;
+                const posY = loc.y ?? geo.y;
+                const locRegion = loc.region || geo.region;
+                const isMatchRegion = filterRegion === 'all' || locRegion === filterRegion;
 
                 return (
                   <g
@@ -309,16 +319,16 @@ export default function WorldFootprintMap() {
                     {(isSelected || loc.isHome) && (
                       <>
                         <circle
-                          cx={loc.x}
-                          cy={loc.y}
+                          cx={posX}
+                          cy={posY}
                           r="1.4"
                           fill="none"
                           stroke="var(--color-primary)"
                           className="map-pulse-ring"
                         />
                         <circle
-                          cx={loc.x}
-                          cy={loc.y}
+                          cx={posX}
+                          cy={posY}
                           r="2.2"
                           fill="none"
                           stroke="var(--color-primary)"
@@ -329,8 +339,8 @@ export default function WorldFootprintMap() {
 
                     {/* Red Center Marker Dot */}
                     <circle
-                      cx={loc.x}
-                      cy={loc.y}
+                      cx={posX}
+                      cy={posY}
                       r={isSelected ? '0.95' : '0.65'}
                       fill="var(--color-primary)"
                       stroke="#FFFFFF"
@@ -343,8 +353,8 @@ export default function WorldFootprintMap() {
 
                     {/* Invisible Larger Target Circle for Easy Hover / Touch */}
                     <circle
-                      cx={loc.x}
-                      cy={loc.y}
+                      cx={posX}
+                      cy={posY}
                       r="2.5"
                       fill="transparent"
                     />
