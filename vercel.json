@@ -10,6 +10,10 @@
       "destination": "/api/index.js"
     },
     {
+      "source": "/(vi|en)/(dong-gop-xa-hoi|social-contribution|tin-tuc-su-kien|news-events)/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

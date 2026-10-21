@@ -120,17 +120,111 @@ app.use('/assets', express.static(publicAssetsDir));
 app.use('/api/public', publicRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Dynamic OpenGraph & Twitter Card SSR Meta Tag Injector for Social Media Sharing (Facebook, Zalo, Twitter, LinkedIn, Telegram)
+async function renderPageWithMeta(req, res, next) {
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/assets')) {
+    return next();
+  }
+
+  const distHtml = path.resolve(__dirname, '../dist/index.html');
+  const rootHtml = path.resolve(__dirname, '../index.html');
+  const htmlFile = fs.existsSync(distHtml) ? distHtml : (fs.existsSync(rootHtml) ? rootHtml : null);
+
+  if (!htmlFile) {
+    return next();
+  }
+
+  let html = fs.readFileSync(htmlFile, 'utf8');
+
+  // Protocol and host resolution for absolute image URLs (mandatory for Facebook, Zalo, Twitter, LinkedIn)
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const protocol = forwardedProto ? forwardedProto.split(',')[0].trim() : (req.protocol === 'https' ? 'https' : (req.headers['x-forwarded-ssl'] === 'on' ? 'https' : req.protocol));
+  const host = req.headers['x-forwarded-host'] || req.get('host') || 'nirvlab.org';
+  const baseUrl = `${protocol}://${host}`;
+  const fullUrl = `${baseUrl}${req.originalUrl || req.url}`;
+
+  // Default brand metadata
+  let pageTitle = 'NIRV — Network for Intelligent Research Vietnam';
+  let pageDesc = 'Cộng đồng kết nối sinh viên và người trẻ nghiên cứu Trí tuệ Nhân tạo (NLP, CV, LLMs).';
+  let pageImage = `${baseUrl}/uploads/1792580609685_1792561391106_202164200782567973_3826812143860545776_303ca5e914fb3273297adf791edd7016.jpg`;
+  let pageType = 'website';
+
+  try {
+    const { db } = require('./db');
+    const pathParts = req.path.split('/').filter(Boolean);
+    const isLangVi = pathParts[0] === 'vi' || pathParts[0] !== 'en';
+    const section = pathParts[1];
+    const slug = pathParts[2];
+
+    if (slug && (section === 'dong-gop-xa-hoi' || section === 'social-contribution')) {
+      const init = await db.get('SELECT * FROM initiatives WHERE slug = ?', [slug]);
+      if (init) {
+        pageType = 'article';
+        pageTitle = `${isLangVi ? init.title_vi : (init.title_en || init.title_vi)} — NIRV`;
+        pageDesc = isLangVi ? (init.summary_vi || init.title_vi) : (init.summary_en || init.title_en || init.summary_vi);
+        if (init.cover_image) {
+          pageImage = init.cover_image.startsWith('http') ? init.cover_image : `${baseUrl}${init.cover_image.startsWith('/') ? '' : '/'}${init.cover_image}`;
+        }
+      }
+    } else if (slug && (section === 'tin-tuc-su-kien' || section === 'news-events')) {
+      const newsItem = await db.get('SELECT * FROM news_events WHERE slug = ?', [slug]);
+      if (newsItem) {
+        pageType = 'article';
+        pageTitle = `${isLangVi ? newsItem.title_vi : (newsItem.title_en || newsItem.title_vi)} — NIRV`;
+        pageDesc = isLangVi ? (newsItem.summary_vi || newsItem.title_vi) : (newsItem.summary_en || newsItem.title_en || newsItem.summary_vi);
+        if (newsItem.cover_image) {
+          pageImage = newsItem.cover_image.startsWith('http') ? newsItem.cover_image : `${baseUrl}${newsItem.cover_image.startsWith('/') ? '' : '/'}${newsItem.cover_image}`;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error generating social preview meta tags:', err.message);
+  }
+
+  const escapeHtml = (str) => String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeTitle = escapeHtml(pageTitle);
+  const safeDesc = escapeHtml(pageDesc);
+  const safeImage = escapeHtml(pageImage);
+  const safeUrl = escapeHtml(fullUrl);
+
+  const dynamicMeta = `
+    <title>${safeTitle}</title>
+    <meta name="description" content="${safeDesc}" />
+    <meta property="og:type" content="${pageType}" />
+    <meta property="og:site_name" content="NIRV — Network for Intelligent Research Vietnam" />
+    <meta property="og:url" content="${safeUrl}" />
+    <meta property="og:title" content="${safeTitle}" />
+    <meta property="og:description" content="${safeDesc}" />
+    <meta property="og:image" content="${safeImage}" />
+    <meta property="og:image:secure_url" content="${safeImage}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="${safeTitle}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="${safeUrl}" />
+    <meta name="twitter:title" content="${safeTitle}" />
+    <meta name="twitter:description" content="${safeDesc}" />
+    <meta name="twitter:image" content="${safeImage}" />
+  `;
+
+  // Strip pre-existing static meta tags
+  html = html.replace(/<title>.*?<\/title>/i, '');
+  html = html.replace(/<meta\s+name=["']description["'].*?>/gi, '');
+  html = html.replace(/<meta\s+property=["']og:.*?["'].*?>/gi, '');
+  html = html.replace(/<meta\s+name=["']twitter:.*?["'].*?>/gi, '');
+
+  html = html.replace('</head>', `${dynamicMeta}\n  </head>`);
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  return res.send(html);
+}
+
 // Static built frontend if dist exists
 const distDir = path.resolve(__dirname, '../dist');
 if (fs.existsSync(distDir)) {
-  app.use(express.static(distDir));
-  app.use((req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/assets')) {
-      return next();
-    }
-    res.sendFile(path.join(distDir, 'index.html'));
-  });
+  app.use(express.static(distDir, { index: false }));
 }
+app.use(renderPageWithMeta);
 
 // Health check
 app.get('/api/health', (req, res) => {

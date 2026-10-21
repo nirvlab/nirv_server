@@ -39,6 +39,85 @@ export default function AdminDashboard({ user, onLogout }) {
 
   const token = localStorage.getItem('nirv_admin_token');
 
+  // Inline Content Image Inserter Modal State
+  const [imageInsertModal, setImageInsertModal] = useState({
+    isOpen: false,
+    targetField: 'content_vi',
+    tab: 'library',
+    selectedUrl: '',
+    caption: '',
+    align: 'center'
+  });
+
+  const openImageInserter = (targetField) => {
+    fetch('/api/admin/media', { headers: authHeaders })
+      .then(res => res.json())
+      .then(res => { if (res.success) setMediaList(res.data); });
+
+    setImageInsertModal({
+      isOpen: true,
+      targetField,
+      tab: 'library',
+      selectedUrl: '',
+      caption: '',
+      align: 'center'
+    });
+  };
+
+  const handleConfirmInsertImage = () => {
+    if (!imageInsertModal.selectedUrl) {
+      notify('Vui lòng chọn hoặc nhập đường dẫn ảnh.', 'error');
+      return;
+    }
+
+    const { targetField, selectedUrl, caption, align } = imageInsertModal;
+    const captionText = caption ? `${align}: ${caption.trim()}` : align;
+    const tag = `\n\n![${captionText}](${selectedUrl})\n\n`;
+
+    setEditingItem(prev => {
+      const currentVal = prev?.[targetField] || '';
+      return {
+        ...prev,
+        [targetField]: currentVal ? `${currentVal}${tag}` : tag.trim()
+      };
+    });
+
+    setImageInsertModal(prev => ({ ...prev, isOpen: false }));
+    notify('Đã chèn ảnh vào nội dung bài viết!');
+  };
+
+  const handleInsertImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      notify('Đang tải ảnh lên máy chủ...');
+      const res = await fetch('/api/admin/media/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        notify('Tải ảnh lên thành công!');
+        setImageInsertModal(prev => ({
+          ...prev,
+          selectedUrl: data.data.url,
+          caption: prev.caption || file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ')
+        }));
+        fetch('/api/admin/media', { headers: authHeaders })
+          .then(r => r.json())
+          .then(res => { if (res.success) setMediaList(res.data); });
+      } else {
+        notify(data.error || 'Lỗi khi tải ảnh', 'error');
+      }
+    } catch (err) {
+      notify('Lỗi máy chủ khi tải ảnh', 'error');
+    }
+  };
+
   const authHeaders = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`
@@ -1176,13 +1255,58 @@ export default function AdminDashboard({ user, onLogout }) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Nội dung chi tiết (VI)</label>
-                  <textarea rows={4} value={editingItem.content_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, content_vi: e.target.value })} className="form-textarea" />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>Nội dung chi tiết (VI)</label>
+                    <button
+                      type="button"
+                      onClick={() => openImageInserter('content_vi')}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 12px',
+                        backgroundColor: 'var(--color-primary-bg)',
+                        color: 'var(--color-primary)',
+                        border: '1px solid var(--color-primary)',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <ImageIcon size={14} /> Chèn ảnh vào nội dung
+                    </button>
+                  </div>
+                  <textarea rows={5} value={editingItem.content_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, content_vi: e.target.value })} className="form-textarea" placeholder="Nhập nội dung bài viết. Bạn có thể nhấn 'Chèn ảnh vào nội dung' ở trên để thêm hình ảnh minh họa..." />
+                  <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                    💡 <strong>Mẹo:</strong> Nhấn "Chèn ảnh vào nội dung" để chọn ảnh từ thư viện hoặc tải lên, tự động căn lề (giữa/trái/phải) và thêm chú thích.
+                  </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Nội dung chi tiết (EN)</label>
-                  <textarea rows={4} value={editingItem.content_en || ''} onChange={(e) => setEditingItem({ ...editingItem, content_en: e.target.value })} className="form-textarea" />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>Nội dung chi tiết (EN)</label>
+                    <button
+                      type="button"
+                      onClick={() => openImageInserter('content_en')}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 12px',
+                        backgroundColor: 'var(--color-primary-bg)',
+                        color: 'var(--color-primary)',
+                        border: '1px solid var(--color-primary)',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <ImageIcon size={14} /> Insert Inline Image
+                    </button>
+                  </div>
+                  <textarea rows={5} value={editingItem.content_en || ''} onChange={(e) => setEditingItem({ ...editingItem, content_en: e.target.value })} className="form-textarea" placeholder="Detailed content in English..." />
                 </div>
 
                 <div className="grid-2">
@@ -1319,13 +1443,70 @@ export default function AdminDashboard({ user, onLogout }) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Nội dung đầy đủ (VI)</label>
-                  <textarea rows={4} value={editingItem.content_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, content_vi: e.target.value })} className="form-textarea" />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>Nội dung đầy đủ (VI) *</label>
+                    <button
+                      type="button"
+                      onClick={() => openImageInserter('content_vi')}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 12px',
+                        backgroundColor: 'var(--color-primary-bg)',
+                        color: 'var(--color-primary)',
+                        border: '1px solid var(--color-primary)',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <ImageIcon size={14} /> Chèn ảnh vào bài viết
+                    </button>
+                  </div>
+                  <textarea
+                    rows={6}
+                    value={editingItem.content_vi || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, content_vi: e.target.value })}
+                    className="form-textarea"
+                    placeholder="Nhập nội dung bài viết. Bạn có thể nhấn 'Chèn ảnh vào bài viết' ở trên để thêm hình ảnh minh họa..."
+                  />
+                  <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                    💡 <strong>Mẹo:</strong> Nhấn "Chèn ảnh vào bài viết" để chèn ảnh từ thư viện media hoặc máy tính. Bạn có thể chọn căn giữa toàn bài, căn lề trái hoặc căn lề phải để chữ bao quanh ảnh.
+                  </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Nội dung đầy đủ (EN)</label>
-                  <textarea rows={4} value={editingItem.content_en || ''} onChange={(e) => setEditingItem({ ...editingItem, content_en: e.target.value })} className="form-textarea" />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>Nội dung đầy đủ (EN)</label>
+                    <button
+                      type="button"
+                      onClick={() => openImageInserter('content_en')}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 12px',
+                        backgroundColor: 'var(--color-primary-bg)',
+                        color: 'var(--color-primary)',
+                        border: '1px solid var(--color-primary)',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <ImageIcon size={14} /> Insert Inline Image
+                    </button>
+                  </div>
+                  <textarea
+                    rows={6}
+                    value={editingItem.content_en || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, content_en: e.target.value })}
+                    className="form-textarea"
+                    placeholder="Article full content in English..."
+                  />
                 </div>
 
                 <div className="grid-2">
@@ -1765,6 +1946,226 @@ export default function AdminDashboard({ user, onLogout }) {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* INLINE IMAGE INSERTER MODAL */}
+      {imageInsertModal.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, padding: '20px' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '10px', width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-main)', margin: 0 }}>
+                  Chèn hình ảnh vào bài viết
+                </h3>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                  Đang chèn vào: <strong>{imageInsertModal.targetField === 'content_vi' ? 'Nội dung (Tiếng Việt)' : 'Nội dung (English)'}</strong>
+                </div>
+              </div>
+              <button type="button" onClick={() => setImageInsertModal(prev => ({ ...prev, isOpen: false }))} style={{ padding: '6px' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Tabs: Library / Upload / Direct URL */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setImageInsertModal(prev => ({ ...prev, tab: 'library' }))}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  backgroundColor: imageInsertModal.tab === 'library' ? 'var(--color-primary-bg)' : 'transparent',
+                  color: imageInsertModal.tab === 'library' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  border: imageInsertModal.tab === 'library' ? '1px solid var(--color-primary)' : '1px solid transparent'
+                }}
+              >
+                📁 Thư viện Media ({mediaList.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setImageInsertModal(prev => ({ ...prev, tab: 'upload' }))}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  backgroundColor: imageInsertModal.tab === 'upload' ? 'var(--color-primary-bg)' : 'transparent',
+                  color: imageInsertModal.tab === 'upload' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  border: imageInsertModal.tab === 'upload' ? '1px solid var(--color-primary)' : '1px solid transparent'
+                }}
+              >
+                ⬆️ Tải ảnh từ máy tính
+              </button>
+              <button
+                type="button"
+                onClick={() => setImageInsertModal(prev => ({ ...prev, tab: 'url' }))}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  backgroundColor: imageInsertModal.tab === 'url' ? 'var(--color-primary-bg)' : 'transparent',
+                  color: imageInsertModal.tab === 'url' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  border: imageInsertModal.tab === 'url' ? '1px solid var(--color-primary)' : '1px solid transparent'
+                }}
+              >
+                🔗 Nhập link URL ảnh
+              </button>
+            </div>
+
+            {/* TAB CONTENT */}
+            {imageInsertModal.tab === 'library' && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
+                  Nhấp vào ảnh bên dưới để chọn chèn vào bài viết:
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px', maxHeight: '200px', overflowY: 'auto', padding: '6px', border: '1px solid var(--color-border-light)', borderRadius: '6px' }}>
+                  {mediaList.length === 0 ? (
+                    <div style={{ gridColumn: '1 / -1', padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                      Chưa có ảnh trong thư viện. Chuyển sang tab "Tải ảnh từ máy tính" để tải lên ảnh mới.
+                    </div>
+                  ) : (
+                    mediaList.map((m) => {
+                      const isSelected = imageInsertModal.selectedUrl === m.url;
+                      return (
+                        <div
+                          key={m.id}
+                          onClick={() => setImageInsertModal(prev => ({ ...prev, selectedUrl: m.url, caption: prev.caption || m.original_name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') }))}
+                          style={{
+                            height: '80px',
+                            borderRadius: '6px',
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                            position: 'relative',
+                            border: isSelected ? '3px solid var(--color-primary)' : '1px solid var(--color-border)',
+                            boxShadow: isSelected ? '0 0 8px rgba(238,0,51,0.4)' : 'none'
+                          }}
+                        >
+                          <img src={m.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          {isSelected && (
+                            <div style={{ position: 'absolute', top: '4px', right: '4px', backgroundColor: 'var(--color-primary)', color: '#FFFFFF', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Check size={12} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {imageInsertModal.tab === 'upload' && (
+              <div style={{ marginBottom: '20px', padding: '24px', border: '2px dashed var(--color-border)', borderRadius: '8px', textAlign: 'center', backgroundColor: '#FAFAFA' }}>
+                <label style={{ cursor: 'pointer', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Upload size={24} />
+                  </div>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-main)' }}>Bấm để chọn tệp ảnh từ máy tính</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Hỗ trợ JPG, PNG, WEBP, SVG</span>
+                  <input type="file" accept="image/*" onChange={handleInsertImageUpload} style={{ display: 'none' }} />
+                </label>
+              </div>
+            )}
+
+            {imageInsertModal.tab === 'url' && (
+              <div style={{ marginBottom: '20px' }}>
+                <label className="form-label">Đường dẫn URL ảnh (https://... hoặc /uploads/...)</label>
+                <input
+                  type="text"
+                  placeholder="https://example.com/image.jpg hoặc /uploads/..."
+                  value={imageInsertModal.selectedUrl}
+                  onChange={(e) => setImageInsertModal(prev => ({ ...prev, selectedUrl: e.target.value }))}
+                  className="form-input"
+                />
+              </div>
+            )}
+
+            {/* PREVIEW & ALIGNMENT SETTINGS */}
+            {imageInsertModal.selectedUrl && (
+              <div style={{ backgroundColor: '#F8F9FA', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', gap: '14px', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ width: '80px', height: '60px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--color-border)', flexShrink: 0 }}>
+                    <img src={imageInsertModal.selectedUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  <div style={{ flexGrow: 1, overflow: 'hidden' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                      {imageInsertModal.selectedUrl}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                      Ảnh đã sẵn sàng chèn vào vị trí bài viết
+                    </div>
+                  </div>
+                </div>
+
+                {/* Alignment selector */}
+                <div style={{ marginBottom: '14px' }}>
+                  <label className="form-label" style={{ marginBottom: '6px' }}>Căn lề hình ảnh trong bài viết:</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                    {[
+                      { key: 'center', label: 'Căn giữa toàn bài', desc: 'Full-width / Cân đối' },
+                      { key: 'left', label: 'Căn lề trái', desc: 'Chữ bao quanh phải' },
+                      { key: 'right', label: 'Căn lề phải', desc: 'Chữ bao quanh trái' }
+                    ].map(al => (
+                      <button
+                        key={al.key}
+                        type="button"
+                        onClick={() => setImageInsertModal(prev => ({ ...prev, align: al.key }))}
+                        style={{
+                          padding: '8px 6px',
+                          borderRadius: '6px',
+                          border: imageInsertModal.align === al.key ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                          backgroundColor: imageInsertModal.align === al.key ? 'var(--color-primary-bg)' : '#FFFFFF',
+                          color: imageInsertModal.align === al.key ? 'var(--color-primary)' : 'var(--color-text-main)',
+                          textAlign: 'center',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>{al.label}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>{al.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Caption input */}
+                <div>
+                  <label className="form-label" style={{ marginBottom: '6px' }}>Chú thích ảnh (hiển thị nghiêng bên dưới ảnh):</label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Trao đổi học thuật tại phiên toàn thể hội nghị..."
+                    value={imageInsertModal.caption}
+                    onChange={(e) => setImageInsertModal(prev => ({ ...prev, caption: e.target.value }))}
+                    className="form-input"
+                    style={{ fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setImageInsertModal(prev => ({ ...prev, isOpen: false }))}
+                className="btn-outline-gray"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmInsertImage}
+                disabled={!imageInsertModal.selectedUrl}
+                className="btn-solid"
+                style={{ opacity: imageInsertModal.selectedUrl ? 1 : 0.5, cursor: imageInsertModal.selectedUrl ? 'pointer' : 'not-allowed' }}
+              >
+                Chèn ảnh vào bài viết
+              </button>
+            </div>
           </div>
         </div>
       )}

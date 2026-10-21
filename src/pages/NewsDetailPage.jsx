@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { ArrowLeft, Calendar, MapPin, User, ExternalLink, Share2, Tag } from 'lucide-react';
+import ArticleContent from '../components/ArticleContent';
 
 export default function NewsDetailPage() {
   const { slug } = useParams();
@@ -22,6 +23,33 @@ export default function NewsDetailPage() {
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    if (!item) return;
+    const title = `${lang === 'vi' ? item.title_vi : (item.title_en || item.title_vi)} — NIRV`;
+    document.title = title;
+
+    const setMeta = (attr, key, val) => {
+      if (!val) return;
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', val);
+    };
+
+    const desc = lang === 'vi' ? (item.summary_vi || item.title_vi) : (item.summary_en || item.title_en || item.summary_vi);
+    const img = item.cover_image?.startsWith('http') ? item.cover_image : `${window.location.origin}${item.cover_image?.startsWith('/') ? '' : '/'}${item.cover_image || ''}`;
+    setMeta('property', 'og:title', title);
+    setMeta('property', 'og:description', desc);
+    setMeta('property', 'og:image', img);
+    setMeta('property', 'og:url', window.location.href);
+    setMeta('name', 'twitter:title', title);
+    setMeta('name', 'twitter:description', desc);
+    setMeta('name', 'twitter:image', img);
+  }, [item, lang]);
 
   if (loading) {
     return (
@@ -131,8 +159,8 @@ export default function NewsDetailPage() {
           </div>
 
           {/* Main Body */}
-          <div style={{ fontSize: '1.05rem', lineHeight: '1.8', color: 'var(--color-text-body)', whiteSpace: 'pre-line', marginBottom: '40px' }}>
-            {lang === 'vi' ? item.content_vi : item.content_en}
+          <div style={{ marginBottom: '40px' }}>
+            <ArticleContent content={lang === 'vi' ? item.content_vi : item.content_en} />
           </div>
 
           {/* Tags */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { ArrowLeft, CheckCircle2, Users, Target, Calendar, Share2 } from 'lucide-react';
+import ArticleContent from '../components/ArticleContent';
 
 export default function InitiativeDetailPage() {
   const { slug } = useParams();
@@ -18,6 +19,33 @@ export default function InitiativeDetailPage() {
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    if (!initiative) return;
+    const title = `${lang === 'vi' ? initiative.title_vi : (initiative.title_en || initiative.title_vi)} — NIRV`;
+    document.title = title;
+
+    const setMeta = (attr, key, val) => {
+      if (!val) return;
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', val);
+    };
+
+    const desc = lang === 'vi' ? (initiative.summary_vi || initiative.title_vi) : (initiative.summary_en || initiative.title_en || initiative.summary_vi);
+    const img = initiative.cover_image?.startsWith('http') ? initiative.cover_image : `${window.location.origin}${initiative.cover_image?.startsWith('/') ? '' : '/'}${initiative.cover_image || ''}`;
+    setMeta('property', 'og:title', title);
+    setMeta('property', 'og:description', desc);
+    setMeta('property', 'og:image', img);
+    setMeta('property', 'og:url', window.location.href);
+    setMeta('name', 'twitter:title', title);
+    setMeta('name', 'twitter:description', desc);
+    setMeta('name', 'twitter:image', img);
+  }, [initiative, lang]);
 
   if (loading) {
     return (
@@ -84,9 +112,9 @@ export default function InitiativeDetailPage() {
                 <h3 style={{ fontSize: '1.3rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '16px', color: 'var(--color-text-main)' }}>
                   {lang === 'vi' ? 'BỐI CẢNH & MỤC TIÊU CHIẾN LƯỢC' : 'CONTEXT & STRATEGIC OBJECTIVES'}
                 </h3>
-                <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: 'var(--color-text-body)', whiteSpace: 'pre-line' }}>
-                  {lang === 'vi' ? initiative.content_vi : initiative.content_en}
-                </p>
+                <div style={{ marginTop: '16px' }}>
+                  <ArticleContent content={lang === 'vi' ? initiative.content_vi : initiative.content_en} />
+                </div>
               </div>
 
               {/* Gallery if present */}
