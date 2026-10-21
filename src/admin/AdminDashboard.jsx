@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   BarChart2, HeartHandshake, Newspaper, BookOpen, Users, Settings,
   Image as ImageIcon, LogOut, Plus, Trash2, Edit2, Eye, Check, X,
-  ExternalLink, Upload, AlertCircle, RefreshCw, MapPin, Globe
+  ExternalLink, Upload, AlertCircle, RefreshCw, MapPin, Globe, Database, ArrowRight
 } from 'lucide-react';
 import { CountryFlag, getCountryCode } from '../components/WorldFootprintMap';
 import { COUNTRY_GEO_MAP, detectCountryGeo } from '../data/countryCoordinates';
@@ -21,7 +21,14 @@ const PRESET_DESTINATIONS = Object.values(COUNTRY_GEO_MAP).map(item => ({
 export default function AdminDashboard({ user, onLogout }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('stats');
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    publications: { total: 0, published: 0, draft: 0 },
+    initiatives: { total: 0, published: 0, draft: 0 },
+    news_events: { total: 0, published: 0, draft: 0 },
+    team: { total: 0, published: 0 },
+    media: { total: 0 },
+    footprint: { total: 0 }
+  });
   const [initiatives, setInitiatives] = useState([]);
   const [newsEvents, setNewsEvents] = useState([]);
   const [publications, setPublications] = useState([]);
@@ -134,7 +141,14 @@ export default function AdminDashboard({ user, onLogout }) {
     if (activeTab === 'stats') {
       fetch('/api/admin/stats', { headers: authHeaders })
         .then(res => res.json())
-        .then(res => { if (res.success) setStats(res.data); })
+        .then(res => {
+          if (res.success && res.data) {
+            setStats(res.data);
+          }
+        })
+        .catch(err => {
+          console.error('Lỗi khi tải thống kê tổng quan:', err);
+        })
         .finally(() => setLoading(false));
     } else if (activeTab === 'initiatives') {
       fetch('/api/admin/initiatives', { headers: authHeaders })
@@ -476,40 +490,310 @@ export default function AdminDashboard({ user, onLogout }) {
 
         <div style={{ padding: '32px' }}>
           {/* TAB 1: OVERVIEW STATS */}
-          {activeTab === 'stats' && stats && (
+          {activeTab === 'stats' && (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-                <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Ấn phẩm nghiên cứu</div>
-                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--color-primary)', margin: '8px 0' }}>{stats.publications?.total || 0}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>Đã xuất bản: {stats.publications?.published || 0} | Bản nháp: {stats.publications?.draft || 0}</div>
+              {/* Header with quick refresh */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-main)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Trung tâm Điều phối Dữ liệu NIRV
+                  </h2>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                    Thống kê thời gian thực từ cơ sở dữ liệu SQLite Cloud (ACID) đồng bộ toàn diện trên website
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadData}
+                  disabled={loading}
+                  className="btn-outline"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    borderRadius: '6px',
+                    backgroundColor: '#FFFFFF'
+                  }}
+                >
+                  <RefreshCw size={15} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+                  {loading ? 'Đang cập nhật...' : 'Làm mới số liệu'}
+                </button>
+              </div>
+
+              {/* 6 Stat Cards Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                {/* 1. Publications */}
+                <div 
+                  onClick={() => setActiveTab('publications')}
+                  style={{ 
+                    backgroundColor: '#FFFFFF', 
+                    padding: '24px', 
+                    borderRadius: '8px', 
+                    border: '1px solid var(--color-border)', 
+                    boxShadow: 'var(--shadow-sm)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    position: 'relative'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Ấn phẩm nghiên cứu</span>
+                    <span style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'rgba(139, 0, 0, 0.08)', color: 'var(--color-primary)' }}>
+                      <BookOpen size={18} />
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--color-primary)', margin: '10px 0 6px 0' }}>
+                    {stats?.publications?.total ?? 0}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>
+                    <span>Đã xuất bản: <strong style={{ color: 'var(--color-text-main)' }}>{stats?.publications?.published ?? 0}</strong> | Nháp: {stats?.publications?.draft ?? 0}</span>
+                    <ArrowRight size={14} style={{ color: 'var(--color-primary)' }} />
+                  </div>
                 </div>
 
-                <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Dự án Đóng góp xã hội</div>
-                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#1B5E20', margin: '8px 0' }}>{stats.initiatives?.total || 0}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>Đang hiển thị: {stats.initiatives?.published || 0} dự án</div>
+                {/* 2. Initiatives */}
+                <div 
+                  onClick={() => setActiveTab('initiatives')}
+                  style={{ 
+                    backgroundColor: '#FFFFFF', 
+                    padding: '24px', 
+                    borderRadius: '8px', 
+                    border: '1px solid var(--color-border)', 
+                    boxShadow: 'var(--shadow-sm)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#1B5E20'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Đóng góp xã hội</span>
+                    <span style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'rgba(27, 94, 32, 0.08)', color: '#1B5E20' }}>
+                      <HeartHandshake size={18} />
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#1B5E20', margin: '10px 0 6px 0' }}>
+                    {stats?.initiatives?.total ?? 0}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>
+                    <span>Đang hiển thị: <strong style={{ color: 'var(--color-text-main)' }}>{stats?.initiatives?.published ?? 0}</strong> dự án</span>
+                    <ArrowRight size={14} style={{ color: '#1B5E20' }} />
+                  </div>
                 </div>
 
-                <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Tin tức & Sự kiện</div>
-                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#D46B08', margin: '8px 0' }}>{stats.news_events?.total || 0}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>Đã đăng tải: {stats.news_events?.published || 0} bài</div>
+                {/* 3. News & Events */}
+                <div 
+                  onClick={() => setActiveTab('news')}
+                  style={{ 
+                    backgroundColor: '#FFFFFF', 
+                    padding: '24px', 
+                    borderRadius: '8px', 
+                    border: '1px solid var(--color-border)', 
+                    boxShadow: 'var(--shadow-sm)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#D46B08'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Tin tức & Sự kiện</span>
+                    <span style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'rgba(212, 107, 8, 0.08)', color: '#D46B08' }}>
+                      <Newspaper size={18} />
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#D46B08', margin: '10px 0 6px 0' }}>
+                    {stats?.news_events?.total ?? 0}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>
+                    <span>Đã đăng tải: <strong style={{ color: 'var(--color-text-main)' }}>{stats?.news_events?.published ?? 0}</strong> bài viết</span>
+                    <ArrowRight size={14} style={{ color: '#D46B08' }} />
+                  </div>
                 </div>
 
-                <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Nhân sự & Nhà khoa học</div>
-                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--color-text-main)', margin: '8px 0' }}>{stats.team?.total || 0}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>Hồ sơ hoạt động: {stats.team?.published || 0} chuyên gia</div>
+                {/* 4. Team Members */}
+                <div 
+                  onClick={() => setActiveTab('team')}
+                  style={{ 
+                    backgroundColor: '#FFFFFF', 
+                    padding: '24px', 
+                    borderRadius: '8px', 
+                    border: '1px solid var(--color-border)', 
+                    boxShadow: 'var(--shadow-sm)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#0958D9'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Hồ sơ Đội ngũ</span>
+                    <span style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'rgba(9, 88, 217, 0.08)', color: '#0958D9' }}>
+                      <Users size={18} />
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#0958D9', margin: '10px 0 6px 0' }}>
+                    {stats?.team?.total ?? 0}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>
+                    <span>Hồ sơ hoạt động: <strong style={{ color: 'var(--color-text-main)' }}>{stats?.team?.published ?? 0}</strong> chuyên gia</span>
+                    <ArrowRight size={14} style={{ color: '#0958D9' }} />
+                  </div>
+                </div>
+
+                {/* 5. Footprint / Destinations */}
+                <div 
+                  onClick={() => setActiveTab('footprint')}
+                  style={{ 
+                    backgroundColor: '#FFFFFF', 
+                    padding: '24px', 
+                    borderRadius: '8px', 
+                    border: '1px solid var(--color-border)', 
+                    boxShadow: 'var(--shadow-sm)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#722ED1'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Vùng đất đã đến</span>
+                    <span style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'rgba(114, 46, 209, 0.08)', color: '#722ED1' }}>
+                      <MapPin size={18} />
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#722ED1', margin: '10px 0 6px 0' }}>
+                    {stats?.footprint?.total ?? 0}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>
+                    <span>Điểm đến khoa học / Hội nghị</span>
+                    <ArrowRight size={14} style={{ color: '#722ED1' }} />
+                  </div>
+                </div>
+
+                {/* 6. Media Assets */}
+                <div 
+                  onClick={() => setActiveTab('media')}
+                  style={{ 
+                    backgroundColor: '#FFFFFF', 
+                    padding: '24px', 
+                    borderRadius: '8px', 
+                    border: '1px solid var(--color-border)', 
+                    boxShadow: 'var(--shadow-sm)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#262626'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Tư liệu Đa phương tiện</span>
+                    <span style={{ padding: '6px', borderRadius: '6px', backgroundColor: 'rgba(38, 38, 38, 0.08)', color: '#262626' }}>
+                      <ImageIcon size={18} />
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#262626', margin: '10px 0 6px 0' }}>
+                    {stats?.media?.total ?? 0}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>
+                    <span>Ảnh và tệp tài nguyên hệ thống</span>
+                    <ArrowRight size={14} style={{ color: '#262626' }} />
+                  </div>
                 </div>
               </div>
 
-              <div style={{ backgroundColor: '#FFFFFF', padding: '28px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '14px' }}>Hướng dẫn Quản trị Dữ liệu NIRV</h3>
-                <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', lineHeight: '1.7' }}>
-                  Hệ thống quản lý nội dung độc lập (Private CMS) lưu trữ trực tiếp vào cơ sở dữ liệu SQLite chuẩn ACID.
-                  Mọi thao tác tạo mới, chỉnh sửa, chuyển trạng thái "Đã xuất bản" (Published) hoặc "Bản nháp" (Draft) sẽ tự động phản ánh ngay lập tức trên các trang công khai song ngữ (VI/EN) và tính toán lại toàn bộ biểu đồ, số liệu thống kê.
-                </p>
+              {/* Bottom 2-Column Info & Quick Shortcuts */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
+                <div style={{ backgroundColor: '#FFFFFF', padding: '28px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                    <Database size={20} style={{ color: 'var(--color-primary)' }} />
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, textTransform: 'uppercase', margin: 0 }}>
+                      Quy trình Vận hành & Đồng bộ NIRV CMS
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: '1.7', margin: 0 }}>
+                    Hệ thống quản lý nội dung độc lập lưu trữ trực tiếp vào cơ sở dữ liệu SQLite chuẩn ACID. Mọi thao tác thêm, sửa, xóa hoặc đổi trạng thái <strong>"Đã xuất bản"</strong> / <strong>"Bản nháp"</strong> sẽ tự động cập nhật ngay lập tức trên các trang giao diện công khai song ngữ (VI/EN) và tính toán lại toàn bộ số liệu thống kê.
+                  </p>
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border-light)', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#1B5E20', backgroundColor: 'rgba(27, 94, 32, 0.08)', padding: '4px 10px', borderRadius: '4px', fontWeight: 600 }}>
+                      <Check size={14} /> CSDL Turso SQLite Cloud Online
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#0958D9', backgroundColor: 'rgba(9, 88, 217, 0.08)', padding: '4px 10px', borderRadius: '4px', fontWeight: 600 }}>
+                      <Check size={14} /> OpenGraph & Ảnh Chia Sẻ Sẵn Sàng
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: '#FFFFFF', padding: '28px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '16px', margin: '0 0 16px 0' }}>
+                    Tác vụ Nhanh Thường Dùng
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('initiatives');
+                        setEditingItem({
+                          title_vi: '', title_en: '', slug: '', summary_vi: '', summary_en: '',
+                          content_vi: '', content_en: '', category_vi: 'Dân tộc thiểu số', category_en: 'Ethnic Minorities',
+                          beneficiaries_vi: '', beneficiaries_en: '',
+                          verification_vi: '', verification_en: '',
+                          metric_value: '', metric_label_vi: '', metric_label_en: '',
+                          cover_image: '', status: 'published', order_index: (initiatives?.length || 0) + 1
+                        });
+                        setModalType('initiative');
+                      }}
+                      className="btn-outline"
+                      style={{ padding: '10px 14px', fontSize: '0.85rem', justifyContent: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <Plus size={16} style={{ color: '#1B5E20' }} />
+                      <span>Thêm Dự án Đóng góp xã hội mới</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('news');
+                        setEditingItem({
+                          title_vi: '', title_en: '', slug: '', summary_vi: '', summary_en: '',
+                          content_vi: '', content_en: '', type: 'event', event_date: '',
+                          location_vi: '', location_en: '', cover_image: '', status: 'published',
+                          published_at: new Date().toISOString()
+                        });
+                        setModalType('news');
+                      }}
+                      className="btn-outline"
+                      style={{ padding: '10px 14px', fontSize: '0.85rem', justifyContent: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <Plus size={16} style={{ color: '#D46B08' }} />
+                      <span>Tạo Bài viết Tin tức & Sự kiện mới</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('publications');
+                        setEditingItem({
+                          title_vi: '', title_en: '', slug: '', authors: '', venue: '',
+                          year: new Date().getFullYear(), abstract_vi: '', abstract_en: '',
+                          pdf_url: '', doi: '', code_url: '', status: 'published', citation_count: 0
+                        });
+                        setModalType('pub');
+                      }}
+                      className="btn-outline"
+                      style={{ padding: '10px 14px', fontSize: '0.85rem', justifyContent: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <Plus size={16} style={{ color: 'var(--color-primary)' }} />
+                      <span>Đăng ký Ấn phẩm nghiên cứu mới</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -107,20 +107,32 @@ router.get('/me', (req, res) => {
 // GET /api/admin/stats (Internal management statistics)
 router.get('/stats', async (req, res) => {
   try {
-    const pubTotal = await db.get('SELECT count(*) as total, sum(case when status="published" then 1 else 0 end) as published, sum(case when status="draft" then 1 else 0 end) as draft FROM publications');
-    const initTotal = await db.get('SELECT count(*) as total, sum(case when status="published" then 1 else 0 end) as published, sum(case when status="draft" then 1 else 0 end) as draft FROM initiatives');
-    const newsTotal = await db.get('SELECT count(*) as total, sum(case when status="published" then 1 else 0 end) as published, sum(case when status="draft" then 1 else 0 end) as draft FROM news_events');
-    const teamTotal = await db.get('SELECT count(*) as total, sum(case when status="published" then 1 else 0 end) as published FROM team_members');
-    const mediaTotal = await db.get('SELECT count(*) as total FROM media_assets');
+    const [pubTotal, initTotal, newsTotal, teamTotal, mediaTotal, footprintRow] = await Promise.all([
+      db.get("SELECT count(*) as total, coalesce(sum(case when status='published' then 1 else 0 end), 0) as published, coalesce(sum(case when status='draft' then 1 else 0 end), 0) as draft FROM publications").catch(() => ({ total: 0, published: 0, draft: 0 })),
+      db.get("SELECT count(*) as total, coalesce(sum(case when status='published' then 1 else 0 end), 0) as published, coalesce(sum(case when status='draft' then 1 else 0 end), 0) as draft FROM initiatives").catch(() => ({ total: 0, published: 0, draft: 0 })),
+      db.get("SELECT count(*) as total, coalesce(sum(case when status='published' then 1 else 0 end), 0) as published, coalesce(sum(case when status='draft' then 1 else 0 end), 0) as draft FROM news_events").catch(() => ({ total: 0, published: 0, draft: 0 })),
+      db.get("SELECT count(*) as total, coalesce(sum(case when status='published' then 1 else 0 end), 0) as published FROM team_members").catch(() => ({ total: 0, published: 0 })),
+      db.get("SELECT count(*) as total FROM media_assets").catch(() => ({ total: 0 })),
+      db.get("SELECT value FROM site_settings WHERE key = 'footprint_destinations'").catch(() => null)
+    ]);
+
+    let footprintCount = 0;
+    if (footprintRow && footprintRow.value) {
+      try {
+        const parsed = JSON.parse(footprintRow.value);
+        if (Array.isArray(parsed)) footprintCount = parsed.length;
+      } catch (e) {}
+    }
 
     res.json({
       success: true,
       data: {
-        publications: pubTotal || {},
-        initiatives: initTotal || {},
-        news_events: newsTotal || {},
-        team: teamTotal || {},
-        media: mediaTotal || {}
+        publications: pubTotal || { total: 0, published: 0, draft: 0 },
+        initiatives: initTotal || { total: 0, published: 0, draft: 0 },
+        news_events: newsTotal || { total: 0, published: 0, draft: 0 },
+        team: teamTotal || { total: 0, published: 0 },
+        media: mediaTotal || { total: 0 },
+        footprint: { total: footprintCount }
       }
     });
   } catch (err) {
