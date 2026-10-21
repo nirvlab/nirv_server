@@ -3,8 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import {
   BarChart2, HeartHandshake, Newspaper, BookOpen, Users, Settings,
   Image as ImageIcon, LogOut, Plus, Trash2, Edit2, Eye, Check, X,
-  ExternalLink, Upload, AlertCircle, RefreshCw
+  ExternalLink, Upload, AlertCircle, RefreshCw, MapPin, Globe
 } from 'lucide-react';
+
+const PRESET_DESTINATIONS = [
+  { country_vi: 'Hoa Kỳ', country_en: 'United States', flag: '🇺🇸', region: 'americas', x: 28, y: 18 },
+  { country_vi: 'Singapore', country_en: 'Singapore', flag: '🇸🇬', region: 'asia', x: 96, y: 32 },
+  { country_vi: 'Nhật Bản', country_en: 'Japan', flag: '🇯🇵', region: 'asia', x: 109, y: 20 },
+  { country_vi: 'Hàn Quốc', country_en: 'South Korea', flag: '🇰🇷', region: 'asia', x: 106, y: 19 },
+  { country_vi: 'Pháp', country_en: 'France', flag: '🇫🇷', region: 'europe', x: 64, y: 15 },
+  { country_vi: 'Đức', country_en: 'Germany', flag: '🇩🇪', region: 'europe', x: 67, y: 13 },
+  { country_vi: 'Vương quốc Anh', country_en: 'United Kingdom', flag: '🇬🇧', region: 'europe', x: 62, y: 14 },
+  { country_vi: 'Canada', country_en: 'Canada', flag: '🇨🇦', region: 'americas', x: 32, y: 14 },
+  { country_vi: 'Úc', country_en: 'Australia', flag: '🇦🇺', region: 'asia', x: 114, y: 46 },
+  { country_vi: 'Ý', country_en: 'Italy', flag: '🇮🇹', region: 'europe', x: 66, y: 18 },
+  { country_vi: 'Trung Quốc', country_en: 'China', flag: '🇨🇳', region: 'asia', x: 101, y: 19 }
+];
 
 export default function AdminDashboard({ user, onLogout }) {
   const navigate = useNavigate();
@@ -16,12 +30,13 @@ export default function AdminDashboard({ user, onLogout }) {
   const [teamMembers, setTeamMembers] = useState([]);
   const [settings, setSettings] = useState({});
   const [mediaList, setMediaList] = useState([]);
+  const [footprintList, setFootprintList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: 'success' });
 
   // Modal editing states
   const [editingItem, setEditingItem] = useState(null);
-  const [modalType, setModalType] = useState(null); // 'initiative', 'news', 'pub', 'team'
+  const [modalType, setModalType] = useState(null); // 'initiative', 'news', 'pub', 'team', 'footprint'
   const [previewItem, setPreviewItem] = useState(null);
 
   const token = localStorage.getItem('nirv_admin_token');
@@ -64,10 +79,20 @@ export default function AdminDashboard({ user, onLogout }) {
         .then(res => res.json())
         .then(res => { if (res.success) setTeamMembers(res.data); })
         .finally(() => setLoading(false));
-    } else if (activeTab === 'settings') {
+    } else if (activeTab === 'footprint' || activeTab === 'settings') {
       fetch('/api/admin/settings', { headers: authHeaders })
         .then(res => res.json())
-        .then(res => { if (res.success) setSettings(res.data); })
+        .then(res => {
+          if (res.success) {
+            setSettings(res.data);
+            if (res.data.footprint_destinations) {
+              try {
+                const list = JSON.parse(res.data.footprint_destinations);
+                if (Array.isArray(list)) setFootprintList(list);
+              } catch (e) {}
+            }
+          }
+        })
         .finally(() => setLoading(false));
     } else if (activeTab === 'media') {
       fetch('/api/admin/media', { headers: authHeaders })
@@ -139,7 +164,30 @@ export default function AdminDashboard({ user, onLogout }) {
     }
   };
 
-  // Settings Save Handler
+  const handleSaveFootprint = async (updatedList) => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({
+          ...settings,
+          footprint_destinations: JSON.stringify(updatedList)
+        })
+      });
+      const d = await res.json();
+      if (d.success) {
+        setFootprintList(updatedList);
+        notify('Đã cập nhật danh sách vùng đất & hội nghị quốc tế thành công!');
+      } else {
+        notify(d.error || 'Lỗi khi lưu điểm đến.', 'error');
+      }
+    } catch (err) {
+      notify('Lỗi máy chủ khi cập nhật điểm đến.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     try {
@@ -200,6 +248,7 @@ export default function AdminDashboard({ user, onLogout }) {
             { id: 'news', label: 'Tin tức & Sự kiện', icon: Newspaper },
             { id: 'publications', label: 'Ấn phẩm nghiên cứu', icon: BookOpen },
             { id: 'team', label: 'Hồ sơ Đội ngũ', icon: Users },
+            { id: 'footprint', label: 'Vùng đất đã đến', icon: MapPin },
             { id: 'settings', label: 'Cài đặt Tổ chức', icon: Settings },
             { id: 'media', label: 'Quản lý Đa phương tiện', icon: ImageIcon }
           ].map(tab => {
@@ -264,6 +313,7 @@ export default function AdminDashboard({ user, onLogout }) {
             {activeTab === 'news' && 'Quản lý Tin tức & Sự kiện'}
             {activeTab === 'publications' && 'Quản lý Ấn phẩm & Báo cáo Nghiên cứu'}
             {activeTab === 'team' && 'Quản lý Nhân sự & Nhà khoa học'}
+            {activeTab === 'footprint' && 'Quản lý Vùng đất & Hội nghị Quốc tế'}
             {activeTab === 'settings' && 'Cài đặt Thông tin & Tôn chỉ Viện NIRV'}
             {activeTab === 'media' && 'Thư viện Tệp & Hình ảnh Đa phương tiện'}
           </h2>
@@ -660,7 +710,112 @@ export default function AdminDashboard({ user, onLogout }) {
             </div>
           )}
 
-          {/* TAB 6: SETTINGS */}
+          {/* TAB: FOOTPRINT DESTINATIONS CRUD */}
+          {activeTab === 'footprint' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)' }}>
+                  Tổng số: <strong>{footprintList.length}</strong> điểm đến ({footprintList.filter(d => !d.isHome).length} hội nghị quốc tế)
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingItem({
+                      country_vi: 'Hoa Kỳ',
+                      country_en: 'United States',
+                      flag: '🇺🇸',
+                      region: 'americas',
+                      city_vi: 'San Francisco',
+                      city_en: 'San Francisco',
+                      conference_vi: '',
+                      conference_en: '',
+                      topic_vi: '',
+                      topic_en: '',
+                      year: '2026',
+                      date_vi: '',
+                      date_en: '',
+                      delegation_vi: 'Đoàn nghiên cứu NIRV',
+                      delegation_en: 'NIRV Delegation',
+                      conferencesCount: 1,
+                      papersCount: 1,
+                      x: 28,
+                      y: 18
+                    });
+                    setModalType('footprint');
+                  }}
+                  className="btn-solid"
+                  style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+                >
+                  <Plus size={16} /> Thêm Điểm đến / Hội nghị Quốc tế
+                </button>
+              </div>
+
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                  <thead style={{ backgroundColor: '#FAFAFA', borderBottom: '1px solid var(--color-border)' }}>
+                    <tr>
+                      <th style={{ padding: '14px 16px', fontWeight: 700 }}>Quốc gia</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700 }}>Thành phố</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700 }}>Hội nghị & Mục tiêu</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700 }}>Năm</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700 }}>Vai trò</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, textAlign: 'right' }}>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {footprintList.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                          Chưa có hội nghị quốc tế nào được thêm. Điểm khởi đầu mặc định là Việt Nam 🇻🇳.
+                        </td>
+                      </tr>
+                    ) : (
+                      footprintList.map((loc) => (
+                        <tr key={loc.id || loc.country_en} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                          <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-text-main)' }}>
+                            <span style={{ marginRight: '8px', fontSize: '1.2rem' }}>{loc.flag || '🌐'}</span>
+                            {loc.country_vi} ({loc.country_en})
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>{loc.city_vi}</td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <div style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{loc.conference_vi}</div>
+                            {loc.topic_vi && <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{loc.topic_vi}</div>}
+                          </td>
+                          <td style={{ padding: '12px 16px', fontWeight: 700 }}>{loc.year}</td>
+                          <td style={{ padding: '12px 16px' }}>
+                            {loc.isHome ? (
+                              <span className="badge badge-primary">Trụ sở khởi đầu</span>
+                            ) : (
+                              <span className="badge badge-gray">Hội nghị quốc tế</span>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                            {!loc.isHome && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm(`Bạn có chắc chắn muốn xóa điểm đến ${loc.country_vi}?`)) {
+                                    const updated = footprintList.filter(l => l.id !== loc.id);
+                                    handleSaveFootprint(updated);
+                                  }
+                                }}
+                                style={{ padding: '6px', color: '#FF4D4F' }}
+                                title="Xóa điểm đến này"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: SETTINGS */}
           {activeTab === 'settings' && (
             <div style={{ backgroundColor: '#FFFFFF', padding: '36px', borderRadius: '8px', border: '1px solid var(--color-border)', maxWidth: '800px' }}>
               <form onSubmit={handleSaveSettings}>
@@ -1105,13 +1260,193 @@ export default function AdminDashboard({ user, onLogout }) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">URL Ảnh chân dung</label>
-                  <input type="text" value={editingItem.avatar || ''} onChange={(e) => setEditingItem({ ...editingItem, avatar: e.target.value })} className="form-input" />
+                  <label className="form-label">Ảnh chân dung thành viên</label>
+                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center', backgroundColor: '#FAFBFD', padding: '16px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    {/* Live Circular Preview */}
+                    <div
+                      style={{
+                        width: '90px',
+                        height: '90px',
+                        minWidth: '90px',
+                        borderRadius: '50%',
+                        backgroundColor: '#FFFFFF',
+                        border: '3px solid var(--color-primary)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 14px rgba(238, 0, 51, 0.2)'
+                      }}
+                    >
+                      {editingItem.avatar ? (
+                        <img
+                          src={editingItem.avatar}
+                          alt="Preview"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                          {editingItem.name ? editingItem.name.slice(0, 2).toUpperCase() : 'NIRV'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Upload button & URL input */}
+                    <div style={{ flexGrow: 1 }}>
+                      <label
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 16px',
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          color: 'var(--color-text-main)',
+                          marginBottom: '10px',
+                          boxShadow: 'var(--shadow-sm)'
+                        }}
+                      >
+                        <Upload size={16} color="var(--color-primary)" /> Chọn ảnh từ máy tính (Tự động canh tròn)
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              const img = new Image();
+                              img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                const size = 400;
+                                canvas.width = size;
+                                canvas.height = size;
+                                const ctx = canvas.getContext('2d');
+                                const minDim = Math.min(img.width, img.height);
+                                const sx = (img.width - minDim) / 2;
+                                const sy = (img.height - minDim) / 2;
+                                ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+                                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                                setEditingItem(prev => ({ ...prev, avatar: dataUrl }));
+                              };
+                              img.src = evt.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Hoặc dán URL ảnh trực tiếp..."
+                        value={editingItem.avatar || ''}
+                        onChange={(e) => setEditingItem({ ...editingItem, avatar: e.target.value })}
+                        className="form-input"
+                        style={{ fontSize: '0.85rem' }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
                   <button type="button" onClick={() => setModalType(null)} className="btn-outline-gray">Hủy bỏ</button>
                   <button type="submit" className="btn-solid">Lưu nhân sự</button>
+                </div>
+              </form>
+            )}
+
+            {/* Modal fields for Footprint Destination */}
+            {modalType === 'footprint' && (
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const updated = [...footprintList, { ...editingItem, id: 'dest-' + Date.now() }];
+                await handleSaveFootprint(updated);
+                setModalType(null);
+              }}>
+                <div className="form-group">
+                  <label className="form-label">Chọn nhanh Quốc gia phổ biến</label>
+                  <select
+                    className="form-select"
+                    onChange={(e) => {
+                      const found = PRESET_DESTINATIONS.find(p => p.country_en === e.target.value);
+                      if (found) {
+                        setEditingItem({
+                          ...editingItem,
+                          country_vi: found.country_vi,
+                          country_en: found.country_en,
+                          flag: found.flag,
+                          region: found.region,
+                          x: found.x,
+                          y: found.y
+                        });
+                      }
+                    }}
+                  >
+                    <option value="">-- Chọn quốc gia gợi ý sẵn --</option>
+                    {PRESET_DESTINATIONS.map(p => (
+                      <option key={p.country_en} value={p.country_en}>
+                        {p.flag} {p.country_vi} ({p.country_en})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Quốc gia (VI) *</label>
+                    <input type="text" required value={editingItem.country_vi} onChange={(e) => setEditingItem({ ...editingItem, country_vi: e.target.value })} className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Quốc gia (EN) *</label>
+                    <input type="text" required value={editingItem.country_en} onChange={(e) => setEditingItem({ ...editingItem, country_en: e.target.value })} className="form-input" />
+                  </div>
+                </div>
+
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Biểu tượng cờ (Emoji) *</label>
+                    <input type="text" required value={editingItem.flag} onChange={(e) => setEditingItem({ ...editingItem, flag: e.target.value })} className="form-input" placeholder="🇺🇸" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Thành phố *</label>
+                    <input type="text" required value={editingItem.city_vi} onChange={(e) => setEditingItem({ ...editingItem, city_vi: e.target.value, city_en: e.target.value })} className="form-input" placeholder="San Francisco" />
+                  </div>
+                </div>
+
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Tên Hội nghị / Sự kiện (VI) *</label>
+                    <input type="text" required value={editingItem.conference_vi} onChange={(e) => setEditingItem({ ...editingItem, conference_vi: e.target.value, conference_en: e.target.value })} className="form-input" placeholder="Hội nghị Quốc tế ACL 2026" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Năm báo cáo *</label>
+                    <input type="text" required value={editingItem.year} onChange={(e) => setEditingItem({ ...editingItem, year: e.target.value })} className="form-input" placeholder="2026" />
+                  </div>
+                </div>
+
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Số bài báo cáo</label>
+                    <input type="number" min="1" value={editingItem.papersCount || 1} onChange={(e) => setEditingItem({ ...editingItem, papersCount: Number(e.target.value) })} className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Đoàn nghiên cứu</label>
+                    <input type="text" value={editingItem.delegation_vi || 'Đoàn nghiên cứu NIRV'} onChange={(e) => setEditingItem({ ...editingItem, delegation_vi: e.target.value })} className="form-input" />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Chủ đề / Đóng góp nghiên cứu</label>
+                  <input type="text" value={editingItem.topic_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, topic_vi: e.target.value, topic_en: e.target.value })} className="form-input" placeholder="Báo cáo phương pháp tối ưu hóa LLMs..." />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+                  <button type="button" onClick={() => setModalType(null)} className="btn-outline-gray">Hủy bỏ</button>
+                  <button type="submit" className="btn-solid">Lưu Vùng đất mới</button>
                 </div>
               </form>
             )}

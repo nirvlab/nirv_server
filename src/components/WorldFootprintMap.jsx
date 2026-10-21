@@ -1,25 +1,57 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { visitedLocations, footprintStats } from '../data/footprintData';
+import { visitedLocations as defaultLocations, footprintStats as defaultStats } from '../data/footprintData';
 import worldMapPoints from '../data/worldMapPoints.json';
 import AnimatedStat from './AnimatedStat';
 import { Globe, MapPin, Calendar, Award, Users, ChevronRight, Sparkles, Filter, ExternalLink } from 'lucide-react';
 
 export default function WorldFootprintMap() {
   const { lang, t } = useLanguage();
-  const [selectedLocation, setSelectedLocation] = useState(visitedLocations[0]);
+  const [locations, setLocations] = useState(defaultLocations);
+  const [selectedLocation, setSelectedLocation] = useState(defaultLocations[0]);
   const [hoveredLocation, setHoveredLocation] = useState(null);
   const [filterRegion, setFilterRegion] = useState('all');
   const containerRef = useRef(null);
 
+  // Load destinations dynamically from CMS settings
+  useEffect(() => {
+    fetch('/api/public/settings')
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && res.data?.footprint_destinations) {
+          try {
+            const parsed = JSON.parse(res.data.footprint_destinations);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setLocations(parsed);
+              setSelectedLocation(parsed[0]);
+            }
+          } catch (e) {}
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Compute live statistics based on real destinations
+  const dynamicStats = useMemo(() => {
+    const foreign = locations.filter(l => !l.isHome);
+    const countries = new Set(locations.map(l => l.country_en || l.country_vi));
+    const totalConf = foreign.reduce((sum, l) => sum + Number(l.conferencesCount || 1), 0);
+    const totalPapers = foreign.reduce((sum, l) => sum + Number(l.papersCount || 1), 0);
+    return {
+      countriesCount: countries.size,
+      conferencesCount: totalConf,
+      papersPresented: totalPapers
+    };
+  }, [locations]);
+
   // Active location being displayed in the detail card
-  const activeLocation = hoveredLocation || selectedLocation || visitedLocations[0];
+  const activeLocation = hoveredLocation || selectedLocation || locations[0];
 
   // Filter locations by region
   const filteredLocations = useMemo(() => {
-    if (filterRegion === 'all') return visitedLocations;
-    return visitedLocations.filter(loc => loc.region === filterRegion);
-  }, [filterRegion]);
+    if (filterRegion === 'all') return locations;
+    return locations.filter(loc => loc.region === filterRegion);
+  }, [filterRegion, locations]);
 
   const regions = [
     { id: 'all', label_vi: 'Tất cả vùng đất', label_en: 'All Destinations' },
@@ -81,7 +113,7 @@ export default function WorldFootprintMap() {
             >
               <div>
                 <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1 }}>
-                  <AnimatedStat value={footprintStats.countriesCount} />
+                  <AnimatedStat value={dynamicStats.countriesCount} />
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
                   {lang === 'vi' ? 'Quốc gia' : 'Countries'}
@@ -90,7 +122,7 @@ export default function WorldFootprintMap() {
               <div style={{ width: '1px', backgroundColor: 'var(--color-border)' }} />
               <div>
                 <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text-main)', lineHeight: 1.1 }}>
-                  <AnimatedStat value={footprintStats.conferencesCount} suffix={footprintStats.conferencesCount > 0 ? '+' : ''} />
+                  <AnimatedStat value={dynamicStats.conferencesCount} suffix={dynamicStats.conferencesCount > 0 ? '+' : ''} />
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
                   {lang === 'vi' ? 'Hội nghị quốc tế' : 'Conferences'}
@@ -99,7 +131,7 @@ export default function WorldFootprintMap() {
               <div style={{ width: '1px', backgroundColor: 'var(--color-border)' }} />
               <div>
                 <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text-main)', lineHeight: 1.1 }}>
-                  <AnimatedStat value={footprintStats.papersPresented} suffix={footprintStats.papersPresented > 0 ? '+' : ''} />
+                  <AnimatedStat value={dynamicStats.papersPresented} suffix={dynamicStats.papersPresented > 0 ? '+' : ''} />
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
                   {lang === 'vi' ? 'Báo cáo / Bài báo' : 'Presentations'}
@@ -195,7 +227,7 @@ export default function WorldFootprintMap() {
               </g>
 
               {/* 2. Interactive Location Markers (Red Nodes matching reference design) */}
-              {visitedLocations.map((loc) => {
+              {locations.map((loc) => {
                 const isSelected = activeLocation.id === loc.id;
                 const isMatchRegion = filterRegion === 'all' || loc.region === filterRegion;
 
@@ -380,7 +412,7 @@ export default function WorldFootprintMap() {
                 </button>
               );
             })}
-            {visitedLocations.length <= 1 && (
+            {locations.length <= 1 && (
               <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic', marginLeft: '6px' }}>
                 • {lang === 'vi' ? 'Dữ liệu các chuyến công tác và báo cáo hội nghị quốc tế sẽ được cập nhật liên tục qua CMS khi đoàn khởi hành.' : 'Upcoming international conferences will be continuously updated via CMS.'}
               </span>
