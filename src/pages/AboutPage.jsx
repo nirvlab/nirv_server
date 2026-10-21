@@ -428,7 +428,7 @@ export default function AboutPage() {
           <div className="container">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
               <div>
-                <span className="head-sub">{lang === 'vi' ? 'NGƯỜI SÁNG LẬP & THÀNH VIÊN' : 'COMMUNITY FOUNDER'}</span>
+                <span className="head-sub">{lang === 'vi' ? 'BAN ĐIỀU HÀNH & SÁNG LẬP' : 'LEADERSHIP & FOUNDING'}</span>
                 <h2 className="head-pri" style={{ marginBottom: 0 }}>{t('about.teamPreviewTitle')}</h2>
               </div>
               <Link to={routeMap[lang].team} className="btn-pri">
@@ -436,7 +436,7 @@ export default function AboutPage() {
               </Link>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '32px' }}>
               {leadership.map((member) => (
                 <div
                   key={member.id}
@@ -468,11 +468,17 @@ export default function AboutPage() {
                         overflow: 'hidden'
                       }}
                     >
-                      <img
-                        src="/assets/Tran_Duy_Nhan_avt.svg"
-                        alt={member.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }}
-                      />
+                      {member.avatar || member.name === 'Trần Duy Nhân' ? (
+                        <img
+                          src={member.avatar || '/assets/Tran_Duy_Nhan_avt.svg'}
+                          alt={member.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                          {member.name ? member.name.slice(0, 2).toUpperCase() : 'NIRV'}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div style={{ padding: '10px 24px 32px 24px' }}>

@@ -122,7 +122,7 @@ export default function MyTeamPage() {
           )}
 
           {/* External Links Bar */}
-          <div style={{ paddingTop: '14px', borderTop: '1px solid var(--color-border-light)', display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+          <div style={{ paddingTop: '14px', borderTop: '1px solid var(--color-border-light)', display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center', marginTop: 'auto' }}>
             {member.email && (
               <a href={`mailto:${member.email}`} title={member.email} style={{ color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }} className="icon-link">
                 <Mail size={16} color="var(--color-primary)" /> {member.email}
@@ -165,11 +165,18 @@ export default function MyTeamPage() {
         <section className="section">
           <div className="container">
             <div style={{ marginBottom: '36px' }}>
-              <span className="head-sub">{lang === 'vi' ? 'NGƯỜI SÁNG LẬP CỘNG ĐỒNG' : 'COMMUNITY FOUNDER'}</span>
+              <span className="head-sub">{lang === 'vi' ? 'BAN ĐIỀU HÀNH & SÁNG LẬP' : 'LEADERSHIP & FOUNDING'}</span>
               <h2 className="head-pri" style={{ marginBottom: 0 }}>{t('team.leadership')}</h2>
             </div>
 
-            <div style={{ maxWidth: '520px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
+                gap: '32px',
+                maxWidth: teamData.leadership.length === 1 ? '520px' : '1100px'
+              }}
+            >
               {teamData.leadership.map(m => renderMemberCard(m, true))}
             </div>
           </div>

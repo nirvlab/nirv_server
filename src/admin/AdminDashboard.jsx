@@ -1220,43 +1220,102 @@ export default function AdminDashboard({ user, onLogout }) {
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Họ và tên *</label>
-                    <input type="text" required value={editingItem.name} onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })} className="form-input" />
+                    <input type="text" required value={editingItem.name || ''} onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })} className="form-input" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Học hàm / Học vị (VI)</label>
-                    <input type="text" value={editingItem.title_vi} onChange={(e) => setEditingItem({ ...editingItem, title_vi: e.target.value })} className="form-input" />
+                    <input type="text" placeholder="TS., ThS., KS., CN..." value={editingItem.title_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, title_vi: e.target.value })} className="form-input" />
                   </div>
                 </div>
 
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Chức vụ (VI) *</label>
-                    <input type="text" required value={editingItem.role_vi} onChange={(e) => setEditingItem({ ...editingItem, role_vi: e.target.value })} className="form-input" />
+                    <input type="text" required placeholder="Ví dụ: Đồng trưởng nhóm nghiên cứu, Trưởng nhóm..." value={editingItem.role_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, role_vi: e.target.value })} className="form-input" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Chức vụ (EN) *</label>
-                    <input type="text" required value={editingItem.role_en} onChange={(e) => setEditingItem({ ...editingItem, role_en: e.target.value })} className="form-input" />
+                    <input type="text" required placeholder="Ví dụ: Co-Lead Researcher, Research Fellow..." value={editingItem.role_en || ''} onChange={(e) => setEditingItem({ ...editingItem, role_en: e.target.value })} className="form-input" />
                   </div>
                 </div>
 
                 <div className="grid-2">
                   <div className="form-group">
-                    <label className="form-label">Phân nhóm</label>
-                    <select value={editingItem.group_category} onChange={(e) => setEditingItem({ ...editingItem, group_category: e.target.value })} className="form-select">
-                      <option value="leadership">Ban Lãnh đạo Viện</option>
-                      <option value="researchers">Nghiên cứu viên</option>
-                      <option value="advisors">Hội đồng Cố vấn</option>
+                    <label className="form-label">Phân nhóm *</label>
+                    <select value={editingItem.group_category || 'researchers'} onChange={(e) => setEditingItem({ ...editingItem, group_category: e.target.value })} className="form-select">
+                      <option value="leadership">Ban Lãnh đạo & Sáng lập (Leadership)</option>
+                      <option value="researchers">Thành viên & Cộng tác viên (Researchers)</option>
+                      <option value="advisors">Hội đồng Cố vấn (Advisors)</option>
                     </select>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Email</label>
-                    <input type="email" value={editingItem.email || ''} onChange={(e) => setEditingItem({ ...editingItem, email: e.target.value })} className="form-input" />
+                    <label className="form-label">Thứ tự hiển thị (Order Index)</label>
+                    <input type="number" value={editingItem.order_index ?? 0} onChange={(e) => setEditingItem({ ...editingItem, order_index: Number(e.target.value) })} className="form-input" />
                   </div>
                 </div>
 
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Đơn vị công tác (VI)</label>
+                    <input type="text" placeholder="Ví dụ: Viện Nghiên cứu NIRV, Trường ĐH KHTN..." value={editingItem.affiliation_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, affiliation_vi: e.target.value })} className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Đơn vị công tác (EN)</label>
+                    <input type="text" placeholder="Ví dụ: NIRV Research Community..." value={editingItem.affiliation_en || ''} onChange={(e) => setEditingItem({ ...editingItem, affiliation_en: e.target.value })} className="form-input" />
+                  </div>
+                </div>
+
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Định hướng nghiên cứu (VI)</label>
+                    <input type="text" placeholder="Xử lý ngôn ngữ tự nhiên (NLP), Thị giác máy tính (CV)..." value={editingItem.research_interests_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, research_interests_vi: e.target.value })} className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Research Interests (EN)</label>
+                    <input type="text" placeholder="Natural Language Processing (NLP), Computer Vision (CV)..." value={editingItem.research_interests_en || ''} onChange={(e) => setEditingItem({ ...editingItem, research_interests_en: e.target.value })} className="form-input" />
+                  </div>
+                </div>
+
+                {/* Field giới thiệu ngắn về thành viên */}
                 <div className="form-group">
-                  <label className="form-label">Lĩnh vực nghiên cứu (VI)</label>
-                  <input type="text" value={editingItem.research_interests_vi || ''} onChange={(e) => setEditingItem({ ...editingItem, research_interests_vi: e.target.value })} className="form-input" />
+                  <label className="form-label">
+                    Giới thiệu ngắn / Tiểu sử (VI) <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>★ Hiển thị trên thẻ thành viên</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Giới thiệu tóm tắt kinh nghiệm, quá trình đồng hành, đóng góp chuyên môn, vai trò tại NIRV..."
+                    value={editingItem.bio_vi || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, bio_vi: e.target.value })}
+                    className="form-input"
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Short Biography (EN)</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Short summary of background, contributions, or research role..."
+                    value={editingItem.bio_en || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, bio_en: e.target.value })}
+                    className="form-input"
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
+
+                <div className="grid-3">
+                  <div className="form-group">
+                    <label className="form-label">Email liên hệ</label>
+                    <input type="email" placeholder="example@gmail.com" value={editingItem.email || ''} onChange={(e) => setEditingItem({ ...editingItem, email: e.target.value })} className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Google Scholar</label>
+                    <input type="url" placeholder="https://scholar.google.com/..." value={editingItem.google_scholar || ''} onChange={(e) => setEditingItem({ ...editingItem, google_scholar: e.target.value })} className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">GitHub</label>
+                    <input type="url" placeholder="https://github.com/..." value={editingItem.github || ''} onChange={(e) => setEditingItem({ ...editingItem, github: e.target.value })} className="form-input" />
+                  </div>
                 </div>
 
                 <div className="form-group">
