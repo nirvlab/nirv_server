@@ -3,9 +3,9 @@ const router = express.Router();
 const { db } = require('../db');
 
 // GET /api/public/settings
-router.get('/settings', (req, res) => {
+router.get('/settings', async (req, res) => {
   try {
-    const rows = db.prepare('SELECT key, value FROM site_settings').all();
+    const rows = await db.all('SELECT key, value FROM site_settings');
     const settings = {};
     for (const r of rows) {
       settings[r.key] = r.value;
@@ -17,31 +17,31 @@ router.get('/settings', (req, res) => {
 });
 
 // GET /api/public/overview (Institution-wide real counts & featured highlights)
-router.get('/overview', (req, res) => {
+router.get('/overview', async (req, res) => {
   try {
     // 1. Calculate live statistics from published records only
-    const pubCount = db.prepare("SELECT count(*) as count, coalesce(sum(citation_count), 0) as citations FROM publications WHERE status = 'published'").get();
-    const initCount = db.prepare("SELECT count(*) as count FROM initiatives WHERE status = 'published'").get();
-    const newsCount = db.prepare("SELECT count(*) as count FROM news_events WHERE status = 'published' AND type = 'news'").get();
-    const eventCount = db.prepare("SELECT count(*) as count FROM news_events WHERE status = 'published' AND type = 'event'").get();
-    const teamCount = db.prepare("SELECT count(*) as count FROM team_members WHERE status = 'published'").get();
+    const pubCount = await db.get("SELECT count(*) as count, coalesce(sum(citation_count), 0) as citations FROM publications WHERE status = 'published'");
+    const initCount = await db.get("SELECT count(*) as count FROM initiatives WHERE status = 'published'");
+    const newsCount = await db.get("SELECT count(*) as count FROM news_events WHERE status = 'published' AND type = 'news'");
+    const eventCount = await db.get("SELECT count(*) as count FROM news_events WHERE status = 'published' AND type = 'event'");
+    const teamCount = await db.get("SELECT count(*) as count FROM team_members WHERE status = 'published'");
 
     // 2. Fetch featured items for landing page
-    const featuredInitiatives = db.prepare("SELECT * FROM initiatives WHERE status = 'published' ORDER BY order_index ASC, id DESC LIMIT 3").all();
-    const featuredNews = db.prepare("SELECT * FROM news_events WHERE status = 'published' ORDER BY is_featured DESC, published_at DESC LIMIT 3").all();
-    const featuredPubs = db.prepare("SELECT * FROM publications WHERE status = 'published' ORDER BY is_featured DESC, year DESC, citation_count DESC LIMIT 4").all();
-    const leadership = db.prepare("SELECT * FROM team_members WHERE status = 'published' AND group_category = 'leadership' ORDER BY order_index ASC LIMIT 4").all();
+    const featuredInitiatives = await db.all("SELECT * FROM initiatives WHERE status = 'published' ORDER BY order_index ASC, id DESC LIMIT 3");
+    const featuredNews = await db.all("SELECT * FROM news_events WHERE status = 'published' ORDER BY is_featured DESC, published_at DESC LIMIT 3");
+    const featuredPubs = await db.all("SELECT * FROM publications WHERE status = 'published' ORDER BY is_featured DESC, year DESC, citation_count DESC LIMIT 4");
+    const leadership = await db.all("SELECT * FROM team_members WHERE status = 'published' AND group_category = 'leadership' ORDER BY order_index ASC LIMIT 4");
 
     res.json({
       success: true,
       data: {
         stats: {
-          total_publications: pubCount.count,
-          total_citations: pubCount.citations,
-          total_initiatives: initCount.count,
-          total_news: newsCount.count,
-          total_events: eventCount.count,
-          total_team: teamCount.count
+          total_publications: pubCount ? pubCount.count : 0,
+          total_citations: pubCount ? pubCount.citations : 0,
+          total_initiatives: initCount ? initCount.count : 0,
+          total_news: newsCount ? newsCount.count : 0,
+          total_events: eventCount ? eventCount.count : 0,
+          total_team: teamCount ? teamCount.count : 0
         },
         featured_initiatives: featuredInitiatives,
         featured_news: featuredNews,
@@ -55,9 +55,9 @@ router.get('/overview', (req, res) => {
 });
 
 // GET /api/public/initiatives
-router.get('/initiatives', (req, res) => {
+router.get('/initiatives', async (req, res) => {
   try {
-    const initiatives = db.prepare("SELECT * FROM initiatives WHERE status = 'published' ORDER BY order_index ASC, id DESC").all();
+    const initiatives = await db.all("SELECT * FROM initiatives WHERE status = 'published' ORDER BY order_index ASC, id DESC");
     res.json({ success: true, data: initiatives });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -65,9 +65,9 @@ router.get('/initiatives', (req, res) => {
 });
 
 // GET /api/public/initiatives/:slug
-router.get('/initiatives/:slug', (req, res) => {
+router.get('/initiatives/:slug', async (req, res) => {
   try {
-    const item = db.prepare("SELECT * FROM initiatives WHERE slug = ? AND status = 'published'").get(req.params.slug);
+    const item = await db.get("SELECT * FROM initiatives WHERE slug = ? AND status = 'published'", [req.params.slug]);
     if (!item) {
       return res.status(404).json({ success: false, error: 'Initiative not found' });
     }
@@ -78,7 +78,7 @@ router.get('/initiatives/:slug', (req, res) => {
 });
 
 // GET /api/public/news-events
-router.get('/news-events', (req, res) => {
+router.get('/news-events', async (req, res) => {
   try {
     const { type, category, search, timing, limit = 20, page = 1 } = req.query;
     let query = "SELECT * FROM news_events WHERE status = 'published'";
@@ -109,13 +109,13 @@ router.get('/news-events', (req, res) => {
     // Sort: events by event_date, news by published_at
     query += " ORDER BY is_featured DESC, coalesce(event_date, published_at) DESC";
 
-    const allRecords = db.prepare(query).all(...params);
+    const allRecords = await db.all(query, params);
     const total = allRecords.length;
     const offset = (Number(page) - 1) * Number(limit);
     const paged = allRecords.slice(offset, offset + Number(limit));
 
     // Categories list for filter bar
-    const categories = db.prepare("SELECT DISTINCT category_vi, category_en FROM news_events WHERE status = 'published'").all();
+    const categories = await db.all("SELECT DISTINCT category_vi, category_en FROM news_events WHERE status = 'published'");
 
     res.json({
       success: true,
@@ -134,20 +134,20 @@ router.get('/news-events', (req, res) => {
 });
 
 // GET /api/public/news-events/:slug
-router.get('/news-events/:slug', (req, res) => {
+router.get('/news-events/:slug', async (req, res) => {
   try {
-    const item = db.prepare("SELECT * FROM news_events WHERE slug = ? AND status = 'published'").get(req.params.slug);
+    const item = await db.get("SELECT * FROM news_events WHERE slug = ? AND status = 'published'", [req.params.slug]);
     if (!item) {
       return res.status(404).json({ success: false, error: 'Article/Event not found' });
     }
 
     // Related items
-    const related = db.prepare(`
+    const related = await db.all(`
       SELECT id, slug, type, title_vi, title_en, summary_vi, summary_en, cover_image, category_vi, category_en, published_at, event_date
       FROM news_events
       WHERE status = 'published' AND id != ? AND type = ?
       ORDER BY published_at DESC LIMIT 3
-    `).all(item.id, item.type);
+    `, [item.id, item.type]);
 
     res.json({ success: true, data: item, related });
   } catch (err) {
@@ -156,42 +156,42 @@ router.get('/news-events/:slug', (req, res) => {
 });
 
 // GET /api/public/publications/stats (Dynamic statistics strictly computed from published records)
-router.get('/publications/stats', (req, res) => {
+router.get('/publications/stats', async (req, res) => {
   try {
-    const summary = db.prepare(`
+    const summary = await db.get(`
       SELECT count(*) as total, coalesce(sum(citation_count), 0) as total_citations
       FROM publications WHERE status = 'published'
-    `).get();
+    `);
 
-    const byYear = db.prepare(`
+    const byYear = await db.all(`
       SELECT year, count(*) as count
       FROM publications
       WHERE status = 'published'
       GROUP BY year
       ORDER BY year ASC
-    `).all();
+    `);
 
-    const byType = db.prepare(`
+    const byType = await db.all(`
       SELECT publication_type as type, count(*) as count
       FROM publications
       WHERE status = 'published'
       GROUP BY publication_type
       ORDER BY count DESC
-    `).all();
+    `);
 
-    const byRanking = db.prepare(`
+    const byRanking = await db.all(`
       SELECT coalesce(ranking_category, 'Unranked') as ranking, count(*) as count
       FROM publications
       WHERE status = 'published'
       GROUP BY ranking_category
       ORDER BY count DESC
-    `).all();
+    `);
 
     res.json({
       success: true,
       data: {
-        total: summary.total,
-        total_citations: summary.total_citations,
+        total: summary ? summary.total : 0,
+        total_citations: summary ? summary.total_citations : 0,
         by_year: byYear,
         by_type: byType,
         by_ranking: byRanking
@@ -203,7 +203,7 @@ router.get('/publications/stats', (req, res) => {
 });
 
 // GET /api/public/publications
-router.get('/publications', (req, res) => {
+router.get('/publications', async (req, res) => {
   try {
     const { search, year, author, venue, type, ranking, topic, sort = 'newest' } = req.query;
     let query = "SELECT * FROM publications WHERE status = 'published'";
@@ -252,25 +252,23 @@ router.get('/publications', (req, res) => {
     } else if (sort === 'citations') {
       query += ' ORDER BY citation_count DESC, year DESC';
     } else {
-      // Default: newest first
       query += ' ORDER BY is_featured DESC, year DESC, id DESC';
     }
 
-    const publications = db.prepare(query).all(...params);
+    const publications = await db.all(query, params);
 
-    // Filter facet values
-    const availableYears = db.prepare("SELECT DISTINCT year FROM publications WHERE status = 'published' ORDER BY year DESC").all().map(r => r.year);
-    const availableTypes = db.prepare("SELECT DISTINCT publication_type FROM publications WHERE status = 'published'").all().map(r => r.publication_type);
-    const availableRankings = db.prepare("SELECT DISTINCT ranking_category FROM publications WHERE status = 'published' AND ranking_category IS NOT NULL").all().map(r => r.ranking_category);
+    const availableYearsRows = await db.all("SELECT DISTINCT year FROM publications WHERE status = 'published' ORDER BY year DESC");
+    const availableTypesRows = await db.all("SELECT DISTINCT publication_type FROM publications WHERE status = 'published'");
+    const availableRankingsRows = await db.all("SELECT DISTINCT ranking_category FROM publications WHERE status = 'published' AND ranking_category IS NOT NULL");
 
     res.json({
       success: true,
       data: publications,
       total: publications.length,
       facets: {
-        years: availableYears,
-        types: availableTypes,
-        rankings: availableRankings
+        years: availableYearsRows.map(r => r.year),
+        types: availableTypesRows.map(r => r.publication_type),
+        rankings: availableRankingsRows.map(r => r.ranking_category)
       }
     });
   } catch (err) {
@@ -279,9 +277,9 @@ router.get('/publications', (req, res) => {
 });
 
 // GET /api/public/team
-router.get('/team', (req, res) => {
+router.get('/team', async (req, res) => {
   try {
-    const team = db.prepare("SELECT * FROM team_members WHERE status = 'published' ORDER BY order_index ASC, id ASC").all();
+    const team = await db.all("SELECT * FROM team_members WHERE status = 'published' ORDER BY order_index ASC, id ASC");
     const leadership = team.filter(m => m.group_category === 'leadership');
     const researchers = team.filter(m => m.group_category === 'researchers');
     const advisors = team.filter(m => m.group_category === 'advisors');

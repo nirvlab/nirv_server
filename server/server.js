@@ -108,9 +108,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start listening
-const server = app.listen(PORT, () => {
-  console.log(`NIRV API Server running on http://localhost:${PORT}`);
-});
+// Start listening only in standalone/dev environment (not in Vercel Serverless)
+let server;
+if (!process.env.VERCEL) {
+  server = app.listen(PORT, () => {
+    console.log(`NIRV API Server running on http://localhost:${PORT}`);
+  });
+}
 
 module.exports = { app, server };
