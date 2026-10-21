@@ -5,19 +5,20 @@ import {
   Image as ImageIcon, LogOut, Plus, Trash2, Edit2, Eye, Check, X,
   ExternalLink, Upload, AlertCircle, RefreshCw, MapPin, Globe
 } from 'lucide-react';
+import { CountryFlag, getCountryCode } from '../components/WorldFootprintMap';
 
 const PRESET_DESTINATIONS = [
-  { country_vi: 'Hoa Kỳ', country_en: 'United States', flag: '🇺🇸', region: 'americas', x: 28, y: 18 },
-  { country_vi: 'Singapore', country_en: 'Singapore', flag: '🇸🇬', region: 'asia', x: 96, y: 32 },
-  { country_vi: 'Nhật Bản', country_en: 'Japan', flag: '🇯🇵', region: 'asia', x: 109, y: 20 },
-  { country_vi: 'Hàn Quốc', country_en: 'South Korea', flag: '🇰🇷', region: 'asia', x: 106, y: 19 },
-  { country_vi: 'Pháp', country_en: 'France', flag: '🇫🇷', region: 'europe', x: 64, y: 15 },
-  { country_vi: 'Đức', country_en: 'Germany', flag: '🇩🇪', region: 'europe', x: 67, y: 13 },
-  { country_vi: 'Vương quốc Anh', country_en: 'United Kingdom', flag: '🇬🇧', region: 'europe', x: 62, y: 14 },
-  { country_vi: 'Canada', country_en: 'Canada', flag: '🇨🇦', region: 'americas', x: 32, y: 14 },
-  { country_vi: 'Úc', country_en: 'Australia', flag: '🇦🇺', region: 'asia', x: 114, y: 46 },
-  { country_vi: 'Ý', country_en: 'Italy', flag: '🇮🇹', region: 'europe', x: 66, y: 18 },
-  { country_vi: 'Trung Quốc', country_en: 'China', flag: '🇨🇳', region: 'asia', x: 101, y: 19 }
+  { country_code: 'us', country_vi: 'Hoa Kỳ', country_en: 'United States', flag: '🇺🇸', region: 'americas', x: 28, y: 18 },
+  { country_code: 'sg', country_vi: 'Singapore', country_en: 'Singapore', flag: '🇸🇬', region: 'asia', x: 96, y: 32 },
+  { country_code: 'jp', country_vi: 'Nhật Bản', country_en: 'Japan', flag: '🇯🇵', region: 'asia', x: 109, y: 20 },
+  { country_code: 'kr', country_vi: 'Hàn Quốc', country_en: 'South Korea', flag: '🇰🇷', region: 'asia', x: 106, y: 19 },
+  { country_code: 'fr', country_vi: 'Pháp', country_en: 'France', flag: '🇫🇷', region: 'europe', x: 64, y: 15 },
+  { country_code: 'de', country_vi: 'Đức', country_en: 'Germany', flag: '🇩🇪', region: 'europe', x: 67, y: 13 },
+  { country_code: 'gb', country_vi: 'Vương quốc Anh', country_en: 'United Kingdom', flag: '🇬🇧', region: 'europe', x: 62, y: 14 },
+  { country_code: 'ca', country_vi: 'Canada', country_en: 'Canada', flag: '🇨🇦', region: 'americas', x: 32, y: 14 },
+  { country_code: 'au', country_vi: 'Úc', country_en: 'Australia', flag: '🇦🇺', region: 'asia', x: 114, y: 46 },
+  { country_code: 'it', country_vi: 'Ý', country_en: 'Italy', flag: '🇮🇹', region: 'europe', x: 66, y: 18 },
+  { country_code: 'cn', country_vi: 'Trung Quốc', country_en: 'China', flag: '🇨🇳', region: 'asia', x: 101, y: 19 }
 ];
 
 export default function AdminDashboard({ user, onLogout }) {
@@ -773,7 +774,9 @@ export default function AdminDashboard({ user, onLogout }) {
                       footprintList.map((loc) => (
                         <tr key={loc.id || loc.country_en} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
                           <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-text-main)' }}>
-                            <span style={{ marginRight: '8px', fontSize: '1.2rem' }}>{loc.flag || '🌐'}</span>
+                            <span style={{ marginRight: '10px', display: 'inline-block', verticalAlign: 'middle' }}>
+                              <CountryFlag loc={loc} size="sm" />
+                            </span>
                             {loc.country_vi} ({loc.country_en})
                           </td>
                           <td style={{ padding: '12px 16px' }}>{loc.city_vi}</td>
@@ -1376,6 +1379,7 @@ export default function AdminDashboard({ user, onLogout }) {
                       if (found) {
                         setEditingItem({
                           ...editingItem,
+                          country_code: found.country_code,
                           country_vi: found.country_vi,
                           country_en: found.country_en,
                           flag: found.flag,

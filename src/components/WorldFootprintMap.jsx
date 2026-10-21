@@ -5,6 +5,68 @@ import worldMapPoints from '../data/worldMapPoints.json';
 import AnimatedStat from './AnimatedStat';
 import { Globe, MapPin, Calendar, Award, Users, ChevronRight, Sparkles, Filter, ExternalLink } from 'lucide-react';
 
+// Smart Country Code detector
+export function getCountryCode(loc) {
+  if (!loc) return 'vn';
+  if (loc.country_code) return loc.country_code.toLowerCase();
+  const cvi = (loc.country_vi || '').toLowerCase();
+  const cen = (loc.country_en || '').toLowerCase();
+  if (cvi.includes('việt nam') || cen.includes('vietnam')) return 'vn';
+  if (cvi.includes('hoa kỳ') || cvi.includes('mỹ') || cen.includes('united states') || cen.includes('usa')) return 'us';
+  if (cvi.includes('singapore') || cen.includes('singapore')) return 'sg';
+  if (cvi.includes('nhật') || cen.includes('japan')) return 'jp';
+  if (cvi.includes('hàn') || cen.includes('korea')) return 'kr';
+  if (cvi.includes('pháp') || cen.includes('france')) return 'fr';
+  if (cvi.includes('đức') || cen.includes('germany')) return 'de';
+  if (cvi.includes('anh') || cen.includes('united kingdom') || cen.includes('uk')) return 'gb';
+  if (cvi.includes('úc') || cen.includes('australia')) return 'au';
+  if (cvi.includes('canada') || cen.includes('canada')) return 'ca';
+  if (cvi.includes('ý') || cen.includes('italy')) return 'it';
+  if (cvi.includes('trung') || cen.includes('china')) return 'cn';
+  if (cvi.includes('thụy sĩ') || cen.includes('switzerland')) return 'ch';
+  if (cvi.includes('thụy điển') || cen.includes('sweden')) return 'se';
+  if (cvi.includes('hà lan') || cen.includes('netherlands')) return 'nl';
+  if (cvi.includes('tây ban nha') || cen.includes('spain')) return 'es';
+  if (cvi.includes('thái') || cen.includes('thailand')) return 'th';
+  if (cvi.includes('đài loan') || cen.includes('taiwan')) return 'tw';
+  return 'vn';
+}
+
+export function CountryFlag({ loc, size = 'md' }) {
+  const code = getCountryCode(loc);
+  const width = size === 'sm' ? 18 : (size === 'lg' ? 26 : 22);
+  const height = size === 'sm' ? 13 : (size === 'lg' ? 19 : 16);
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        verticalAlign: 'middle',
+        flexShrink: 0
+      }}
+    >
+      <img
+        src={`https://flagcdn.com/${code}.svg`}
+        alt={loc?.country_vi || code}
+        style={{
+          width: `${width}px`,
+          height: `${height}px`,
+          objectFit: 'cover',
+          borderRadius: '2px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.18)',
+          display: 'block'
+        }}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = `https://flagcdn.com/w40/${code}.png`;
+        }}
+      />
+    </span>
+  );
+}
+
 export default function WorldFootprintMap() {
   const { lang, t } = useLanguage();
   const [locations, setLocations] = useState(defaultLocations);
@@ -311,7 +373,7 @@ export default function WorldFootprintMap() {
           >
             <div style={{ flex: '1 1 540px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{activeLocation.flag}</span>
+                <CountryFlag loc={activeLocation} size="lg" />
                 <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-text-main)' }}>
                   {lang === 'vi' ? activeLocation.country_vi : activeLocation.country_en}
                 </span>
@@ -407,7 +469,7 @@ export default function WorldFootprintMap() {
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  <span>{loc.flag}</span>
+                  <CountryFlag loc={loc} size="sm" />
                   <span>{lang === 'vi' ? loc.country_vi : loc.country_en}</span>
                 </button>
               );
