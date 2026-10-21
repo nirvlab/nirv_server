@@ -77,8 +77,8 @@ export default function MyTeamPage() {
                 style={{
                   width: '100%',
                   height: '100%',
-                  objectFit: 'contain',
-                  objectPosition: 'center center'
+                  objectFit: 'cover',
+                  objectPosition: 'center 20%'
                 }}
                 className="portrait-img"
               />
