@@ -110,34 +110,38 @@ export default function SocialContributionPage() {
                       </p>
 
                       {/* Beneficiaries & Impact Box */}
-                      <div style={{ backgroundColor: 'var(--color-bg-page)', borderRadius: '6px', padding: '16px 20px', marginBottom: '24px', borderLeft: '4px solid var(--color-primary)' }}>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                          {t('social.targetBeneficiaries')}:
-                        </div>
-                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
-                          {lang === 'vi'
-                            ? (item.beneficiaries_vi || 'Cộng đồng đồng bào dân tộc thiểu số và học sinh, sinh viên yêu mến văn hóa truyền thống')
-                            : (item.beneficiaries_en || 'Ethnic minority communities and cultural heritage youth')}
-                        </div>
+                      {(item.beneficiaries_vi || item.beneficiaries_en || item.metric_value || item.verification_vi || item.verification_en) && (
+                        <div style={{ backgroundColor: 'var(--color-bg-page)', borderRadius: '6px', padding: '16px 20px', marginBottom: '24px', borderLeft: '4px solid var(--color-primary)' }}>
+                          {(item.beneficiaries_vi || item.beneficiaries_en) && (
+                            <>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                                {t('social.targetBeneficiaries')}:
+                              </div>
+                              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
+                                {lang === 'vi' ? (item.beneficiaries_vi || item.beneficiaries_en) : (item.beneficiaries_en || item.beneficiaries_vi)}
+                              </div>
+                            </>
+                          )}
 
-                        {item.metric_value && (
-                          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                            <span style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                              {item.metric_value}
-                            </span>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-                              {lang === 'vi' ? item.metric_label_vi : item.metric_label_en}
-                            </span>
-                          </div>
-                        )}
+                          {item.metric_value && (
+                            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                              <span style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                                {item.metric_value}
+                              </span>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                                {lang === 'vi' ? item.metric_label_vi : item.metric_label_en}
+                              </span>
+                            </div>
+                          )}
 
-                        {(item.verification_vi || item.verification_en) && (
-                          <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--color-border)', fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <CheckCircle2 size={14} color="var(--color-primary)" />
-                            <span>{lang === 'vi' ? item.verification_vi : item.verification_en}</span>
-                          </div>
-                        )}
-                      </div>
+                          {(item.verification_vi || item.verification_en) && (
+                            <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--color-border)', fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <CheckCircle2 size={14} color="var(--color-primary)" />
+                              <span>{lang === 'vi' ? (item.verification_vi || item.verification_en) : (item.verification_en || item.verification_vi)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       <div>
                         <Link to={`${routeMap[lang].social}/${item.slug}`} className="btn-pri">

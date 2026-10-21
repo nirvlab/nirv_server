@@ -132,29 +132,29 @@ export default function InitiativeDetailPage() {
                   </div>
                 )}
 
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '6px' }}>
-                    <Users size={16} color="var(--color-primary)" />
-                    {t('social.targetBeneficiaries')}
+                {(initiative.beneficiaries_vi || initiative.beneficiaries_en) && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '6px' }}>
+                      <Users size={16} color="var(--color-primary)" />
+                      {t('social.targetBeneficiaries')}
+                    </div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
+                      {lang === 'vi' ? (initiative.beneficiaries_vi || initiative.beneficiaries_en) : (initiative.beneficiaries_en || initiative.beneficiaries_vi)}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)' }}>
-                    {lang === 'vi'
-                      ? (initiative.beneficiaries_vi || 'Cộng đồng đồng bào dân tộc thiểu số và học sinh, sinh viên yêu mến văn hóa truyền thống')
-                      : (initiative.beneficiaries_en || 'Ethnic minority communities and youth passionate about cultural preservation')}
-                  </div>
-                </div>
+                )}
 
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '6px' }}>
-                    <CheckCircle2 size={16} color="var(--color-primary)" />
-                    {lang === 'vi' ? 'Phương thức Kiểm chứng' : 'Verification Model'}
+                {(initiative.verification_vi || initiative.verification_en) && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '6px' }}>
+                      <CheckCircle2 size={16} color="var(--color-primary)" />
+                      {lang === 'vi' ? 'Phương thức Kiểm chứng' : 'Verification Model'}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-body)', lineHeight: '1.6' }}>
+                      {lang === 'vi' ? (initiative.verification_vi || initiative.verification_en) : (initiative.verification_en || initiative.verification_vi)}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--color-text-body)', lineHeight: '1.6' }}>
-                    {lang === 'vi'
-                      ? (initiative.verification_vi || 'Được thẩm định & bảo trợ chuyên môn tại Hội thi Tin học trẻ toàn quốc lần thứ XXXI')
-                      : (initiative.verification_en || 'Independently audited and evaluated at the 31st National Young Informatics Contest')}
-                  </div>
-                </div>
+                )}
 
                 <div style={{ paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
                   <Link to={routeMap[lang].social} className="btn-pri" style={{ width: '100%', justifyContent: 'center' }}>

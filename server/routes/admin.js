@@ -272,6 +272,7 @@ router.post('/news-events', async (req, res) => {
       is_featured ? 1 : 0, status || 'published', published_at || new Date().toISOString()
     ]);
 
+    clearCache();
     await logAudit(req, 'CREATE_NEWS_EVENT', 'news_event', cleanSlug);
     res.json({ success: true, message: 'Đã tạo bài viết/sự kiện mới thành công.' });
   } catch (err) {
@@ -303,6 +304,7 @@ router.put('/news-events/:id', async (req, res) => {
       is_featured ? 1 : 0, status, published_at, id
     ]);
 
+    clearCache();
     await logAudit(req, 'UPDATE_NEWS_EVENT', 'news_event', id);
     res.json({ success: true, message: 'Cập nhật bài viết/sự kiện thành công.' });
   } catch (err) {
@@ -313,6 +315,7 @@ router.put('/news-events/:id', async (req, res) => {
 router.delete('/news-events/:id', async (req, res) => {
   try {
     await db.run('DELETE FROM news_events WHERE id = ?', [req.params.id]);
+    clearCache();
     await logAudit(req, 'DELETE_NEWS_EVENT', 'news_event', req.params.id);
     res.json({ success: true, message: 'Đã xóa bài viết/sự kiện thành công.' });
   } catch (err) {
@@ -360,6 +363,7 @@ router.post('/publications', async (req, res) => {
       citation_count ? Number(citation_count) : 0, citation_source || 'Manual', topic_tags || '', is_featured ? 1 : 0, status || 'published'
     ]);
 
+    clearCache();
     await logAudit(req, 'CREATE_PUBLICATION', 'publication', title);
     res.json({ success: true, message: 'Thêm ấn phẩm nghiên cứu thành công.' });
   } catch (err) {
@@ -389,6 +393,7 @@ router.put('/publications/:id', async (req, res) => {
       Number(citation_count || 0), citation_source, topic_tags, is_featured ? 1 : 0, status, id
     ]);
 
+    clearCache();
     await logAudit(req, 'UPDATE_PUBLICATION', 'publication', id);
     res.json({ success: true, message: 'Cập nhật ấn phẩm thành công.' });
   } catch (err) {
@@ -399,6 +404,7 @@ router.put('/publications/:id', async (req, res) => {
 router.delete('/publications/:id', async (req, res) => {
   try {
     await db.run('DELETE FROM publications WHERE id = ?', [req.params.id]);
+    clearCache();
     await logAudit(req, 'DELETE_PUBLICATION', 'publication', req.params.id);
     res.json({ success: true, message: 'Đã xóa ấn phẩm nghiên cứu thành công.' });
   } catch (err) {
@@ -447,6 +453,7 @@ router.post('/team', async (req, res) => {
       Number(order_index || 0), status || 'published'
     ]);
 
+    clearCache();
     await logAudit(req, 'CREATE_TEAM_MEMBER', 'team_member', name);
     res.json({ success: true, message: 'Thêm nhân sự nghiên cứu thành công.' });
   } catch (err) {
@@ -477,6 +484,7 @@ router.put('/team/:id', async (req, res) => {
       Number(order_index || 0), status, id
     ]);
 
+    clearCache();
     await logAudit(req, 'UPDATE_TEAM_MEMBER', 'team_member', id);
     res.json({ success: true, message: 'Cập nhật thông tin nhân sự thành công.' });
   } catch (err) {
@@ -487,6 +495,7 @@ router.put('/team/:id', async (req, res) => {
 router.delete('/team/:id', async (req, res) => {
   try {
     await db.run('DELETE FROM team_members WHERE id = ?', [req.params.id]);
+    clearCache();
     await logAudit(req, 'DELETE_TEAM_MEMBER', 'team_member', req.params.id);
     res.json({ success: true, message: 'Đã xóa hồ sơ nhân sự.' });
   } catch (err) {
@@ -520,6 +529,7 @@ router.post('/settings', async (req, res) => {
       `, [key, String(value)]);
     }
 
+    clearCache();
     await logAudit(req, 'UPDATE_SETTINGS', 'settings');
     res.json({ success: true, message: 'Cài đặt hệ thống đã được lưu thành công.' });
   } catch (err) {
@@ -575,6 +585,24 @@ router.get('/media', async (req, res) => {
   try {
     const list = await db.all('SELECT * FROM media_assets ORDER BY id DESC');
     res.json({ success: true, data: list });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.delete('/media/:id', async (req, res) => {
+  try {
+    const row = await db.get('SELECT * FROM media_assets WHERE id = ?', [req.params.id]);
+    if (row && row.filename) {
+      const filePath = path.join(uploadDir, row.filename);
+      if (fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath); } catch (e) {}
+      }
+    }
+    await db.run('DELETE FROM media_assets WHERE id = ?', [req.params.id]);
+    clearCache();
+    await logAudit(req, 'DELETE_MEDIA', 'media', req.params.id);
+    res.json({ success: true, message: 'Đã xóa tệp media thành công.' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

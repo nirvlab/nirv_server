@@ -37,16 +37,28 @@ export default function AboutPage() {
       number: 3,
       label: lang === 'vi' ? 'Định hướng Nghiên cứu' : 'Research Focus Areas',
       desc: lang === 'vi' ? 'NLP, CV & LLMs' : 'NLP, CV & LLMs'
-    },
-    {
-      id: 'team_profiles',
-      number: stats.total_team || 1,
-      label: lang === 'vi' ? 'Hồ sơ Nghiên cứu viên' : 'Community Profiles',
-      desc: lang === 'vi' ? 'Nhà sáng lập & Thành viên' : 'Founder & Members'
     }
   ];
 
-  if (stats.total_publications > 0) {
+  if ((stats.total_team ?? 0) > 0) {
+    genuineStatCards.push({
+      id: 'team_profiles',
+      number: stats.total_team,
+      label: lang === 'vi' ? 'Hồ sơ Nghiên cứu viên' : 'Community Profiles',
+      desc: lang === 'vi' ? 'Nhà sáng lập & Thành viên' : 'Founder & Members'
+    });
+  }
+
+  if ((stats.total_initiatives ?? 0) > 0) {
+    genuineStatCards.push({
+      id: 'initiatives',
+      number: stats.total_initiatives,
+      label: lang === 'vi' ? 'Sáng kiến Xã hội' : 'Social Initiatives',
+      desc: lang === 'vi' ? 'Dự án AI vì cộng đồng' : 'AI for community'
+    });
+  }
+
+  if ((stats.total_publications ?? 0) > 0) {
     genuineStatCards.push({
       id: 'publications',
       number: stats.total_publications,
@@ -55,10 +67,10 @@ export default function AboutPage() {
     });
   }
 
-  if (stats.total_news + stats.total_events > 0) {
+  if (((stats.total_news ?? 0) + (stats.total_events ?? 0)) > 0) {
     genuineStatCards.push({
       id: 'news_events',
-      number: stats.total_news + stats.total_events,
+      number: (stats.total_news || 0) + (stats.total_events || 0),
       label: lang === 'vi' ? 'Tin tức & Hoạt động' : 'News & Activities',
       desc: lang === 'vi' ? 'Giao lưu học thuật' : 'Community outreach'
     });
@@ -116,7 +128,7 @@ export default function AboutPage() {
             {/* 1. Đóng góp xã hội */}
             <div style={{ paddingRight: '16px' }}>
               <div style={{ fontSize: 'clamp(2.4rem, 4vw, 3.2rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '10px' }}>
-                <AnimatedStat value={stats.total_initiatives || 1} suffix="+" />
+                <AnimatedStat value={stats.total_initiatives ?? 0} suffix={(stats.total_initiatives ?? 0) > 0 ? "+" : ""} />
               </div>
               <div style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.04em', marginBottom: '6px' }}>
                 {lang === 'vi' ? 'SÁNG KIẾN ĐÓNG GÓP XÃ HỘI' : 'SOCIAL IMPACT INITIATIVES'}
@@ -129,20 +141,20 @@ export default function AboutPage() {
             {/* 2. Vùng đất đã đến */}
             <div style={{ paddingRight: '16px' }}>
               <div style={{ fontSize: 'clamp(2.4rem, 4vw, 3.2rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '10px' }}>
-                <AnimatedStat value={stats.total_footprint || 2} suffix={lang === 'vi' ? ' nước' : ' countries'} />
+                <AnimatedStat value={stats.total_footprint ?? 0} suffix={lang === 'vi' ? ' quốc gia' : ' countries'} />
               </div>
               <div style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.04em', marginBottom: '6px' }}>
                 {lang === 'vi' ? 'VÙNG ĐẤT ĐÃ ĐẾN & HỘI NGHỊ' : 'GLOBAL FOOTPRINT & REACH'}
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
-                {lang === 'vi' ? 'Việt Nam, Singapore & mạng lưới hội nghị quốc tế' : 'Vietnam, Singapore & international conference network'}
+                {lang === 'vi' ? 'Việt Nam & mạng lưới diễn đàn, hội nghị quốc tế' : 'Vietnam & international conference network'}
               </div>
             </div>
 
             {/* 3. Công bố khoa học */}
             <div style={{ paddingRight: '16px' }}>
               <div style={{ fontSize: 'clamp(2.4rem, 4vw, 3.2rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '10px' }}>
-                <AnimatedStat value={stats.total_publications > 0 ? stats.total_publications : 5} suffix="+" />
+                <AnimatedStat value={stats.total_publications ?? 0} suffix={(stats.total_publications ?? 0) > 0 ? "+" : ""} />
               </div>
               <div style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.04em', marginBottom: '6px' }}>
                 {lang === 'vi' ? 'CÔNG BỐ & BÁO CÁO KHOA HỌC' : 'PUBLICATIONS & PAPERS'}
@@ -155,7 +167,7 @@ export default function AboutPage() {
             {/* 4. Lượt trích dẫn khoa học */}
             <div>
               <div style={{ fontSize: 'clamp(2.4rem, 4vw, 3.2rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '10px' }}>
-                <AnimatedStat value={stats.total_citations > 0 ? stats.total_citations : 48} suffix="+" />
+                <AnimatedStat value={stats.total_citations ?? 0} suffix={(stats.total_citations ?? 0) > 0 ? "+" : ""} />
               </div>
               <div style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.04em', marginBottom: '6px' }}>
                 {lang === 'vi' ? 'LƯỢT TRÍCH DẪN KHOA HỌC' : 'SCIENTIFIC CITATIONS'}
@@ -177,7 +189,7 @@ export default function AboutPage() {
                 {lang === 'vi' ? 'QUY MÔ ĐỘI NGŨ' : 'COMMUNITY SIZE'}
               </div>
               <div style={{ fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '8px' }}>
-                <AnimatedStat value={stats.total_team || 1} suffix="+" />
+                <AnimatedStat value={stats.total_team ?? 0} suffix={(stats.total_team ?? 0) > 0 ? "+" : ""} />
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--color-text-body)' }}>
                 {lang === 'vi' ? 'Nhà sáng lập, nghiên cứu viên & cộng tác viên' : 'Founders, researchers & research fellows'}
@@ -190,7 +202,7 @@ export default function AboutPage() {
                 {lang === 'vi' ? 'HOẠT ĐỘNG HỌC THUẬT' : 'ACADEMIC ACTIVITIES'}
               </div>
               <div style={{ fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '8px' }}>
-                <AnimatedStat value={(stats.total_news || 0) + (stats.total_events || 0) > 0 ? (stats.total_news || 0) + (stats.total_events || 0) : 12} suffix="+" />
+                <AnimatedStat value={(stats.total_news || 0) + (stats.total_events || 0)} suffix={((stats.total_news || 0) + (stats.total_events || 0)) > 0 ? "+" : ""} />
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--color-text-body)' }}>
                 {lang === 'vi' ? 'Tin tức, sự kiện & chia sẻ tri thức công nghệ' : 'News, symposiums & scientific knowledge exchange'}

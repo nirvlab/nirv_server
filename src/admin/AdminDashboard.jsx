@@ -176,19 +176,35 @@ export default function AdminDashboard({ user, onLogout }) {
     if (!window.confirm('Bạn có chắc chắn muốn xóa bản ghi này? Thao tác không thể hoàn tác.')) return;
     try {
       let endpoint = '';
-      if (type === 'initiative') endpoint = `/api/admin/initiatives/${id}`;
-      if (type === 'news') endpoint = `/api/admin/news-events/${id}`;
-      if (type === 'pub') endpoint = `/api/admin/publications/${id}`;
-      if (type === 'team') endpoint = `/api/admin/team/${id}`;
+      if (type === 'initiative') {
+        endpoint = `/api/admin/initiatives/${id}`;
+        setInitiatives(prev => prev.filter(p => p.id !== id));
+      } else if (type === 'news') {
+        endpoint = `/api/admin/news-events/${id}`;
+        setNewsEvents(prev => prev.filter(p => p.id !== id));
+      } else if (type === 'pub') {
+        endpoint = `/api/admin/publications/${id}`;
+        setPublications(prev => prev.filter(p => p.id !== id));
+      } else if (type === 'team') {
+        endpoint = `/api/admin/team/${id}`;
+        setTeamMembers(prev => prev.filter(p => p.id !== id));
+      } else if (type === 'media') {
+        endpoint = `/api/admin/media/${id}`;
+        setMediaList(prev => prev.filter(p => p.id !== id));
+      }
 
       const res = await fetch(endpoint, { method: 'DELETE', headers: authHeaders });
       const data = await res.json();
       if (data.success) {
-        notify(data.message || 'Đã xóa bản ghi!');
+        notify(data.message || 'Đã xóa bản ghi thành công!');
+        loadData();
+      } else {
+        notify(data.error || 'Có lỗi xảy ra khi xóa', 'error');
         loadData();
       }
     } catch (err) {
       notify('Lỗi xóa bản ghi', 'error');
+      loadData();
     }
   };
 
@@ -831,19 +847,32 @@ export default function AdminDashboard({ user, onLogout }) {
                           </td>
                           <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                             {!loc.isHome && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (window.confirm(`Bạn có chắc chắn muốn xóa điểm đến ${loc.country_vi}?`)) {
-                                    const updated = footprintList.filter(l => l.id !== loc.id);
-                                    handleSaveFootprint(updated);
-                                  }
-                                }}
-                                style={{ padding: '6px', color: '#FF4D4F' }}
-                                title="Xóa điểm đến này"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingItem({ ...loc });
+                                    setModalType('footprint');
+                                  }}
+                                  style={{ padding: '6px', color: '#1890FF', marginRight: '8px' }}
+                                  title="Chỉnh sửa điểm đến này"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm(`Bạn có chắc chắn muốn xóa điểm đến ${loc.country_vi}?`)) {
+                                      const updated = footprintList.filter(l => l.id !== loc.id);
+                                      handleSaveFootprint(updated);
+                                    }
+                                  }}
+                                  style={{ padding: '6px', color: '#FF4D4F' }}
+                                  title="Xóa điểm đến này"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
                             )}
                           </td>
                         </tr>
@@ -1008,16 +1037,26 @@ export default function AdminDashboard({ user, onLogout }) {
                       <div style={{ fontSize: '0.8rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={media.original_name}>
                         {media.original_name}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(media.url);
-                          notify('Đã sao chép đường dẫn URL tệp!');
-                        }}
-                        style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', marginTop: '8px' }}
-                      >
-                        Sao chép URL: {media.url}
-                      </button>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--color-border-light)' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(media.url);
+                            notify('Đã sao chép đường dẫn URL tệp!');
+                          }}
+                          style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}
+                        >
+                          Sao chép URL
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteItem('media', media.id)}
+                          style={{ fontSize: '0.75rem', fontWeight: 600, color: '#FF4D4F', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          title="Xóa tệp media này"
+                        >
+                          <Trash2 size={13} /> Xóa
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1608,14 +1647,25 @@ export default function AdminDashboard({ user, onLogout }) {
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 const geo = detectCountryGeo(editingItem);
-                const updated = [...footprintList, {
-                  ...editingItem,
-                  country_code: editingItem.country_code || geo.code,
-                  region: editingItem.region || geo.region,
-                  x: editingItem.x ?? geo.x,
-                  y: editingItem.y ?? geo.y,
-                  id: 'dest-' + Date.now()
-                }];
+                let updated;
+                if (editingItem.id) {
+                  updated = footprintList.map(item => item.id === editingItem.id ? {
+                    ...editingItem,
+                    country_code: editingItem.country_code || geo.code,
+                    region: editingItem.region || geo.region,
+                    x: editingItem.x ?? geo.x,
+                    y: editingItem.y ?? geo.y
+                  } : item);
+                } else {
+                  updated = [...footprintList, {
+                    ...editingItem,
+                    country_code: editingItem.country_code || geo.code,
+                    region: editingItem.region || geo.region,
+                    x: editingItem.x ?? geo.x,
+                    y: editingItem.y ?? geo.y,
+                    id: 'dest-' + Date.now()
+                  }];
+                }
                 await handleSaveFootprint(updated);
                 setModalType(null);
               }}>
