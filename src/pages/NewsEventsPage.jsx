@@ -264,8 +264,23 @@ export default function NewsEventsPage() {
           </div>
 
           {items.length === 0 && !loading && (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)' }}>
-              <h3>{t('common.noData')}</h3>
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '60px 24px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '8px',
+                border: '1px solid var(--color-border)',
+                maxWidth: '680px',
+                margin: '0 auto'
+              }}
+            >
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '10px' }}>
+                {lang === 'vi' ? 'Tin Tức & Hoạt Động Học Thuật' : 'News & Activities'}
+              </h3>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                {t('common.noNews')}
+              </p>
             </div>
           )}
         </div>

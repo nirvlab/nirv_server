@@ -57,6 +57,12 @@ router.post('/login', (req, res) => {
     }
 
     const token = generateToken(user);
+    try {
+      const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+      db.prepare('INSERT INTO audit_logs (user_id, username, action, target_type, target_id, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(user.id, user.username, 'LOGIN_SUCCESS', 'auth', String(user.id), ip);
+    } catch (e) {}
+
     res.json({
       success: true,
       token,
@@ -68,12 +74,24 @@ router.post('/login', (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: 'Đăng nhập không thành công do lỗi hệ thống.' });
   }
 });
 
 // All routes below require authorization
 router.use(requireAuth);
+
+function logAudit(req, action, targetType, targetId = null) {
+  try {
+    const userId = req.user ? req.user.id : null;
+    const username = req.user ? req.user.username : 'anonymous';
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    db.prepare('INSERT INTO audit_logs (user_id, username, action, target_type, target_id, ip_address) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(userId, username, action, targetType, targetId ? String(targetId) : null, ip);
+  } catch (e) {
+    console.error('Audit log write error:', e.message);
+  }
+}
 
 // GET /api/admin/me
 router.get('/me', (req, res) => {
@@ -535,6 +553,16 @@ router.get('/media', (req, res) => {
     res.json({ success: true, data: list });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/admin/audit-logs (Security Audit Trail)
+router.get('/audit-logs', (req, res) => {
+  try {
+    const logs = db.prepare('SELECT * FROM audit_logs ORDER BY id DESC LIMIT 100').all();
+    res.json({ success: true, data: logs });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Không thể truy xuất nhật ký kiểm toán.' });
   }
 });
 

@@ -1,11 +1,12 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { BarChart3, TrendingUp, Award, BookOpen } from 'lucide-react';
+import AnimatedStat from './AnimatedStat';
 
 export default function PublicationCharts({ stats }) {
   const { lang, t } = useLanguage();
 
-  if (!stats) return null;
+  if (!stats || !stats.total || stats.total === 0) return null;
 
   const { total = 0, total_citations = 0, by_year = [], by_type = [], by_ranking = [] } = stats;
 
@@ -23,26 +24,34 @@ export default function PublicationCharts({ stats }) {
             <BookOpen size={28} color="var(--color-primary)" />
           </div>
           <div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1 }}>{total}</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1 }}>
+              <AnimatedStat value={total} />
+            </div>
             <div style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', marginTop: '4px' }}>
               {t('publications.statsTotal')}
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Được kiểm chứng từ CSDL</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+              {lang === 'vi' ? 'Công bố đã được kiểm chứng' : 'Verified peer-reviewed works'}
+            </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#FFF7E6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <TrendingUp size={28} color="#D46B08" />
-          </div>
-          <div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#D46B08', lineHeight: 1 }}>{total_citations.toLocaleString()}</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', marginTop: '4px' }}>
-              {t('publications.statsCitations')}
+        {total_citations > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#FFF7E6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TrendingUp size={28} color="#D46B08" />
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Google Scholar & Scopus</div>
+            <div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#D46B08', lineHeight: 1 }}>
+                <AnimatedStat value={total_citations} />
+              </div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', marginTop: '4px' }}>
+                {t('publications.statsCitations')}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Google Scholar & Scopus</div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 3 Detailed Distribution Charts */}

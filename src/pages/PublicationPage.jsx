@@ -86,8 +86,9 @@ export default function PublicationPage() {
           {/* Dynamic Statistics & Interactive Charts */}
           <PublicationCharts stats={stats} />
 
-          {/* Search, Filter Bar & Sort Controls */}
-          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '24px', marginBottom: '36px', boxShadow: 'var(--shadow-sm)' }}>
+          {/* Search, Filter Bar & Sort Controls (Only visible when publications exist or search is active) */}
+          {(stats?.total > 0 || search || selectedYear || selectedType || selectedRanking) && (
+            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '24px', marginBottom: '36px', boxShadow: 'var(--shadow-sm)' }}>
             <form onSubmit={handleSearchSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'flex-end' }}>
               {/* Keyword Search */}
               <div style={{ gridColumn: 'span 2' }}>
@@ -164,6 +165,7 @@ export default function PublicationPage() {
               </div>
             )}
           </div>
+        )}
 
           {/* 3. Google Scholar / Research Profile Long-form Publications List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -310,11 +312,21 @@ export default function PublicationPage() {
           </div>
 
           {publications.length === 0 && !loading && (
-            <div style={{ textAlign: 'center', padding: '60px 0', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-              <h3>{t('common.noData')}</h3>
-              <button type="button" onClick={clearAllFilters} className="btn-pri" style={{ marginTop: '16px' }}>
-                {t('common.clearFilter')}
-              </button>
+            <div style={{ textAlign: 'center', padding: '60px 24px', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid var(--color-border)', maxWidth: '680px', margin: '0 auto' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'var(--color-primary-bg)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <FileText size={26} color="var(--color-primary)" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '8px' }}>
+                {lang === 'vi' ? 'Ấn Phẩm Khoa Học Đang Được Cập Nhật' : 'Publications Under Preparation'}
+              </h3>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                {t('common.noPublications')}
+              </p>
+              {(search || selectedYear || selectedType || selectedRanking) && (
+                <button type="button" onClick={clearAllFilters} className="btn-pri" style={{ marginTop: '18px' }}>
+                  {t('common.clearFilter')}
+                </button>
+              )}
             </div>
           )}
         </div>

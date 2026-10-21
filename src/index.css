@@ -432,3 +432,77 @@ button {
     padding: 50px 0;
   }
 }
+
+/* Tasteful Subtle Ambient & Scroll Animations */
+@keyframes networkPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.28);
+    opacity: 0.35;
+  }
+}
+
+@keyframes networkRipple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(238, 0, 51, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(238, 0, 51, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(238, 0, 51, 0);
+  }
+}
+
+.network-node-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  animation: networkPulse 2.8s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+.network-badge-ripple {
+  animation: networkRipple 3.2s infinite cubic-bezier(0.24, 0, 0.38, 1);
+}
+
+/* Subtle fade and rise effect */
+.fade-rise {
+  animation: fadeRiseAnim 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeRiseAnim {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Accessibility: Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .network-node-dot,
+  .network-badge-ripple,
+  .fade-rise {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
