@@ -141,7 +141,7 @@ export default function AboutPage() {
             {/* 2. Vùng đất đã đến */}
             <div style={{ paddingRight: '16px' }}>
               <div style={{ fontSize: 'clamp(2.4rem, 4vw, 3.2rem)', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.1, marginBottom: '10px' }}>
-                <AnimatedStat value={stats.total_footprint ?? 0} suffix={lang === 'vi' ? ' quốc gia' : ' countries'} />
+                <AnimatedStat value={stats.total_footprint ?? 0} suffix={(stats.total_footprint ?? 0) > 0 ? "+" : ""} />
               </div>
               <div style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.04em', marginBottom: '6px' }}>
                 {lang === 'vi' ? 'VÙNG ĐẤT ĐÃ ĐẾN & HỘI NGHỊ' : 'GLOBAL FOOTPRINT & REACH'}
