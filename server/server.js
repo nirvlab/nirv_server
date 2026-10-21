@@ -8,8 +8,10 @@ const { initDatabase } = require('./db');
 const publicRoutes = require('./routes/public');
 const adminRoutes = require('./routes/admin');
 
-// Initialize DB schema & seed
-initDatabase();
+// Initialize DB schema & seed (only in standalone/dev, not on every serverless invocation)
+if (!process.env.VERCEL) {
+  initDatabase().catch(console.error);
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -61,10 +63,14 @@ app.use('/api', apiLimiter);
 app.use('/api/admin/login', loginLimiter);
 
 // Static uploads directory with nosniff and download headers
-const uploadDir = path.resolve(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const os = require('node:os');
+const uploadDir = process.env.VERCEL ? path.join(os.tmpdir(), 'uploads') : path.resolve(__dirname, '../uploads');
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (e) {}
+
 app.use(
   '/uploads',
   express.static(uploadDir, {

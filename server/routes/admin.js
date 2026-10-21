@@ -8,10 +8,13 @@ const { db } = require('../db');
 const { generateToken, requireAuth } = require('../auth');
 
 // Multer storage setup
-const uploadDir = path.resolve(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const os = require('node:os');
+const uploadDir = process.env.VERCEL ? path.join(os.tmpdir(), 'uploads') : path.resolve(__dirname, '../../uploads');
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (e) {}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
